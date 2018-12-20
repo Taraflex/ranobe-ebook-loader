@@ -1,0 +1,10 @@
+doctype html
+body
+    header
+        p= title
+    each p in parts
+        if p.result.part.content
+            section 
+                header
+                    p= p.result.part.title
+                | !{p.result.part.content}

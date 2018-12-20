@@ -1,0 +1,28 @@
+doctype xml
+FictionBook(xmlns=NS xmlns:l="http://www.w3.org/1999/xlink")
+    description
+        title-info
+            each g in genres
+                genre= g
+            author
+                nickname= author
+            book-title= title
+            if annotation
+                annotation !{annotation}
+            coverpage
+                image(l:href="#cover")/
+            lang ru
+            if lang
+                src-lang= lang
+        document-info
+            author
+                nickname ранобэ.рф
+                home-page https://xn--80ac9aeh6f.xn--p1ai/#{bookAlias}/                
+            program-used= programName
+            date(value=shortDate)= fullDate
+            src-url https://xn--80ac9aeh6f.xn--p1ai/#{bookAlias}/
+            id= bookAlias
+            version 1
+    body !{body}
+    each bin in attaches
+        binary(id=bin.id content-type=bin.mime) !{bin.data}

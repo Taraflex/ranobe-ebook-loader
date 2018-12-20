@@ -1,0 +1,24 @@
+{
+  "name": "ranobe-rf-fb2-loader",
+  "version": "0.0.1",
+  "description": "Юзерскрипт для скачивания книг в формате fb2 c https://ранобэ.рф/",
+  "scripts": {},
+  "devDependencies": {
+    "base64-inline-loader": "^1.1.1",
+    "dayjs": "^1.7.8",
+    "file-saver": "^2.0.0",
+    "hotkeys-js": "^3.4.1",
+    "last-match": "0.0.1",
+    "nodelist-foreach-polyfill": "^1.2.0",
+    "p-map": "^2.0.0",
+    "pug": "^2.0.3",
+    "pug-loader": "^2.4.0",
+    "rnd-hex": "0.0.1",
+    "svelte": "^2.16.0",
+    "svelte-loader": "2.11.0",
+    "terser-webpack-plugin": "^1.1.0",
+    "webpack": "^4.28.0",
+    "webpack-command": "^0.4.2",
+    "when-dom-ready": "^1.2.12"
+  }
+}
