@@ -229,7 +229,6 @@
 <script>
 	import 'nodelist-foreach-polyfill';
 	import saveAs from 'file-saver';
-	import hotkeys from 'hotkeys-js';
 	import dayjs from 'dayjs';
 	import * as rndHex from 'rnd-hex';
 	import * as fb2Template from './fb2.pug';
@@ -364,29 +363,6 @@
 		}
 	}
 
-	function* chunkify(it, gSize) {
-		if (it.length > 0) {
-			if (gSize > 0 && it.length > gSize) {
-				const chunksCount = Math.ceil(it.length / gSize);
-				const chunkSize = Math.ceil(it.length / chunksCount);
-				let g = [];
-				for (let v of it) {
-					if (g.length < chunkSize) {
-						g.push(v);
-					} else {
-						yield g;
-						g = [v];
-					}
-				}
-				if (g.length) {
-					yield g;
-				}
-			} else {
-				yield it;
-			}
-		}
-	}
-
 	function parse(text, mime) {
 		const doc = new DOMParser().parseFromString(text, mime);
 		const err = doc.querySelector('parsererror');
@@ -394,10 +370,6 @@
 			throw err.textContent;
 		}
 		return doc;
-	}
-
-	function fetchParts(parts, bookAlias) {
-		return Promise.all(parts.map(({ url }) => fetchPart({ bookAlias, partAlias: last(url.split('/').filter(s => s)) })));
 	}
 
 	function replaceTag(doc, elem, tag) {
@@ -467,11 +439,19 @@
 		},
 
 		oncreate() {
-			hotkeys('ctrl+s', (e, handler) => {
-				e.preventDefault();
-				const { loading } = this.get();
-				if (!loading) {
-					this.load();
+			window.addEventListener('keydown', event => {
+				if (
+					!event.defaultPrevented &&
+					!event.altKey &&
+					(event.ctrlKey || event.metaKey) &&
+					(event.key === 's' || event.key === 'S')
+				) {
+					event.preventDefault();
+					const { loading } = this.get();
+					if (!loading) {
+						this.load();
+					}
+					return false;
 				}
 			});
 		},
@@ -493,17 +473,18 @@
 
 					const { mime, data } = await downloadImage(book.image.desktop.image);
 
-					const concurrency = 10;
+					const concurrency = 5;
 
-					const results = [];
-					for (let p of chunkify(parts.reverse(), concurrency)) {
+					const results = await pMap(parts.reverse(), async ({ url }, i) => {
 						try {
-							results.push(... await fetchParts(p, bookAlias));
+							return fetchPart({ bookAlias, partAlias: last(url.split('/').filter(s => s)) });
 						} catch (_) {
-							results.push(... await fetchParts(p, bookAlias));
+							return fetchPart({ bookAlias, partAlias: last(url.split('/').filter(s => s)) });
+						} finally {
+							const { percent } = this.get();
+							this.set({ percent: Math.max(percent, ((i + 1) * 100 / parts.length) | 0) });
 						}
-						this.set({ percent: (results.length * 100 / parts.length) | 0 });
-					}
+					}, { concurrency });
 
 					const images = [];
 
