@@ -446,6 +446,7 @@
 					(event.ctrlKey || event.metaKey) &&
 					(event.key === 's' || event.key === 'S')
 				) {
+					event.stopPropagation();
 					event.preventDefault();
 					const { loading } = this.get();
 					if (!loading) {
@@ -453,7 +454,7 @@
 					}
 					return false;
 				}
-			});
+			}, true);
 			console.log(APP_TITLE + ' loaded');
 		},
 
