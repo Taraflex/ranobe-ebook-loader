@@ -3,7 +3,7 @@
 
 ## Как использовать
 
-- Установить расширение [Tampermonkey](https://tampermonkey.net/) или [Greasemonkey](https://www.greasespot.net/) или [Violentmonkey](https://violentmonkey.github.io/get-it/) или любое другое для поддержки юзерскриптов в вашем браузере.
+- Установить расширение [Tampermonkey](https://tampermonkey.net/) (рекомендуемый вариант) или [Greasemonkey](https://www.greasespot.net/) или [Violentmonkey](https://violentmonkey.github.io/get-it/) или любое другое для поддержки юзерскриптов в вашем браузере.
 - [Нажать для установки юзерскрипта](https://raw.githubusercontent.com/Taraflex/ranobe-rf-fb2-loader/master/build/ranobe-rf-fb2-loader.user.js)
 - Перейти на страницу с книгой и дождаться её прогрузки
 - Нажать ctrl+s
