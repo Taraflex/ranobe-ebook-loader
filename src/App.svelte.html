@@ -223,18 +223,17 @@
 		{percent}%
 	</div>
 	{/if}
-	{#if error}
-	{/if}
 </div>
 <script>
 	import 'nodelist-foreach-polyfill';
 	import saveAs from 'file-saver';
 	import dayjs from 'dayjs';
+	import hotkeys from 'hotkeys-js';
 	import * as rndHex from 'rnd-hex';
 	import * as fb2Template from './fb2.pug';
 	import * as pageTemplate from './page.pug';
-	import * as lastMatch from 'last-match';
-	import * as pMap from 'p-map';
+	import lastMatch from 'last-match';
+	import pMap from 'p-map';
 
 	const unescapeMap = {
 		//'&amp;': '&',
@@ -271,10 +270,18 @@
 
 	//todo подобрать лучшие соответствия http://www.fictionbook.org/index.php/%D0%96%D0%B0%D0%BD%D1%80%D1%8B_FictionBook_2.1
 	const genresMap = {
+		"Adult": "home_sex",
+		"Josei": "sf_action",
+		"Mature": "",
+		"Shounen": "sf_action",
+		"Xianxia": "sf_fantasy",
+		"Xuanhuan": "sf_fantasy",
 		"Боевик": "det_action",
 		"Боевые Искусства": "fantasy_fight",
 		"Вампиры": "vampire_book",
 		"Виртуальный Мир": "sf",
+		"Гарем": "",
+		"Гендерная Интрига": "",
 		"Героическое Фэнтези": "sf_heroic",
 		"Детектив": "detective",
 		"Дзёсэй": "sf_action",
@@ -285,34 +292,29 @@
 		"Меха": "sf",
 		"Мистика": "sf_horror",
 		"Научная Фантастика": "sf",
-		"Приключения": "adventure",
-		"Психология": "sci_psychology",
-		"Сверхъестественное": "sf_horror",
-		"Сёнэн": "sf_action",
-		"Спорт": "home_sport",
-		"Сэйнэн": "sf_action",
-		"сянься": "sf_fantasy",
-		"Триллер": "thriller",
-		"Ужасы": "sf_horror",
-		"Фантастика": "sf",
-		"Фэнтези": "sf_fantasy",
-		"Школьная Жизнь": "children",
-		"Экшн": "sf_action",
-		"Этти": "love_erotica",
-		"Adult": "home_sex",
-		"Josei": "sf_action",
-		"Shounen": "sf_action",
-		"Xianxia": "sf_fantasy",
-		"Xuanhuan": "sf_fantasy",
-		/*"Mature": "",
-		"Гарем": "",	
-		"Гендерная Интрига": "",
 		"Оригинальный сюжет": "",
 		"Повседневность": "",
+		"Приключения": "adventure",
+		"Психология": "sci_psychology",
 		"Романтика": "",
+		"Сверхъестественное": "sf_horror",
+		"Смена Пола": "",
+		"Спорт": "home_sport",
+		"Сэйнэн": "sf_action",
 		"Сёдзе": "",
-		"Смена Пола": "",		
-		"Трагедия": "",*/
+		"Сёдзе-ай": "",
+		"Сёнэн": "sf_action",
+		"Трагедия": "",
+		"Триллер": "thriller",
+		"Ужасы": "sf_horror",
+		"Уся": "fantasy_fight",
+		"Фэнтези": "sf_fantasy",
+		"Хентай": "home_sex",
+		"Школьная Жизнь": "children",
+		"Экшн": "sf_action",
+		"Эротика": "love_erotica",
+		"Этти": "love_erotica",
+		"Юри": ""
 	}
 
 	async function fetchJson(entry, query) {
@@ -329,16 +331,18 @@
 		return a[a.length - 1];
 	}
 
+	const B64_RE = /^\s*data:([image\/jpnf]+);base64/;
+
 	function splitImageBase64(dataUrl, mime) {
 		return {
-			mime: lastMatch(dataUrl.split(',', 1)[0], /data:(.+);base64/) || mime,
+			mime: lastMatch(dataUrl, B64_RE) || mime,
 			data: dataUrl.slice(dataUrl.indexOf(',') + 1)
 		};
 	}
 
 	function toBase64(blob, mime) {
 		return new Promise((resolve, reject) => {
-			var reader = new FileReader();
+			const reader = new FileReader();
 			reader.onloadend = function (evt) {
 				try {
 					if (reader.readyState == /*FileReader.DONE*/ 2) {
@@ -355,7 +359,7 @@
 	}
 
 	async function downloadImage(url) {
-		if (/data:(.+);base64/.test(url)) {
+		if (B64_RE.test(url)) {
 			return splitImageBase64(url);
 		} else {
 			const bookResp = await fetch(url);
@@ -439,29 +443,21 @@
 		},
 
 		oncreate() {
-			window.addEventListener('keydown', event => {
-				if (
-					!event.defaultPrevented &&
-					!event.altKey &&
-					(event.ctrlKey || event.metaKey) &&
-					(event.key === 's' || event.key === 'S')
-				) {
-					event.stopPropagation();
-					event.preventDefault();
-					const { loading } = this.get();
-					if (!loading) {
-						this.load();
-					}
-					return false;
+			hotkeys('ctrl+s', event => {
+				event.stopPropagation();
+				event.preventDefault();
+				const { loading } = this.get();
+				if (!loading) {
+					this.load();
 				}
-			}, true);
+			});
 			console.log(APP_TITLE + ' loaded');
 		},
 
 		methods: {
 			async load() {
 				try {
-					this.set({ loading: true, error: null });
+					this.set({ loading: true, percent: 0, error: null });
 					const bookAlias = location.pathname.split('/', 2).filter(s => s)[0];
 					const { result } = await fetchBook({ bookAlias });
 					const { book, genres, parts } = result;
@@ -469,6 +465,7 @@
 
 					const g = new Set(genres.map(g => genresMap[g.title]));
 					g.delete(undefined);
+					g.delete('');
 					if (g.size < 1) {
 						g.add('unrecognised');
 					}
@@ -510,11 +507,7 @@
 						fullDate: d.format('DD.MM.YYYY'),
 						body,
 						attaches: [
-							{
-								data,
-								mime,
-								id: 'cover'
-							},
+							{ id: 'cover', mime, data },
 							... await pMap(images, async image => Object.assign(image, await downloadImage(image.src)), { concurrency })
 						]
 					}), 'application/xml');

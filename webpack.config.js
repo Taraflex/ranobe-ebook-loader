@@ -22,9 +22,6 @@ module.exports = {
 		minimizer: [new TerserPlugin({
 			terserOptions: {
 				ecma: 7,
-				compress: {
-					collapse_vars: false
-				},
 				output: { comments: /^\s+[=@]+/ },
 			}
 		})],
