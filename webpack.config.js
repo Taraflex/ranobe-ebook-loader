@@ -1,6 +1,6 @@
+const { resolve } = require('path');
 const TerserPlugin = require('terser-webpack-plugin');
 const { BannerPlugin } = require('webpack');
-const path = require('path');
 const { DefinePlugin } = require('webpack');
 
 //@ts-ignore
@@ -8,34 +8,38 @@ const { name: APP_TITLE, version: APP_VERSION, description: APP_DESCRIPTION } = 
 
 module.exports = {
 	entry: {
-		[`${APP_TITLE}.user`]: './src/app.js'
+		[`${APP_TITLE}.user`]: './src/main.js'
 	},
 	resolve: {
-		extensions: ['.js', '.html']
+		extensions: ['.mjs', '.js']
 	},
 	output: {
-		path: path.resolve(__dirname, './build'),
+		path: resolve(__dirname, './build'),
 		filename: "[name].js",
 	},
 	node: false,
 	optimization: {
+		//minimize:false,
 		minimizer: [new TerserPlugin({
 			terserOptions: {
 				ecma: 7,
-				output: { comments: /^\s+[=@]+/ },
+				module: true,
+				compress: { passes: 2 },
+				output: { comments: /^\s+[=@]+(?!t)/ },
 			}
 		})],
 	},
 	module: {
 		rules: [
 			{
-				test: /\.svelte\.html$/,
+				test: /\.svelte$/,
 				exclude: /node_modules/,
 				use: {
 					loader: 'svelte-loader',
 					options: {
 						emitCss: false,
-						hotReload: false
+						hotReload: false,
+						externalDependencies: [resolve(__dirname, './src/fb2.pug'), resolve(__dirname, './src/page.pug')]
 					}
 				}
 			}, {
