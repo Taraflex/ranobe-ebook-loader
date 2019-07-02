@@ -1,7 +1,6 @@
 const { resolve } = require('path');
 const TerserPlugin = require('terser-webpack-plugin');
-const { BannerPlugin } = require('webpack');
-const { DefinePlugin } = require('webpack');
+const { BannerPlugin, DefinePlugin } = require('webpack');
 
 //@ts-ignore
 const { name: APP_TITLE, version: APP_VERSION, description: APP_DESCRIPTION } = require('./package.json');

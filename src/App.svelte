@@ -200,8 +200,7 @@
 		user-select: none;
 	}
 </style>
-<div>
-	{#if loading}
+{#if loading}
 	<div class="rg-loader-bg">
 		<div class="sk-circle">
 			<div class="sk-circle1 sk-child"></div>
@@ -219,8 +218,7 @@
 		</div>
 		{percent}%
 	</div>
-	{/if}
-</div>
+{/if}
 <script>
 	import pMap from 'p-map';
 	import saveAs from 'file-saver';
@@ -229,7 +227,7 @@
 	import * as fb2Template from './fb2.pug';
 	import * as pageTemplate from './page.pug';
 	import { onMount } from 'svelte';
-	import { fetchBook, fetchPart, processHtml, parse, downloadImage, genresMap, replaceTag, last } from './app.js';
+	import { fetchJson, processHtml, parse, downloadImage, genresMap, replaceTag } from './app.js';
 
 	const NS = "http://www.gribuser.ru/xml/fictionbook/2.0";
 
@@ -252,10 +250,9 @@
 			loading = true;
 			percent = 0;
 
-			const bookAlias = location.pathname.split('/', 2).filter(s => s)[0];
-			const { result } = await fetchBook({ bookAlias });
-			const { book, genres, parts } = result;
-			const d = dayjs(book.publishedAt);
+			const bookAlias = location.pathname.split('/', 2).find(Boolean);
+			const { genres, chapters, author, description, createTime, title, images, country } = await fetchJson( bookAlias );
+			const d = dayjs(createTime);
 
 			const g = new Set(genres.map(g => genresMap[g.title]));
 			g.delete(undefined);
@@ -264,36 +261,33 @@
 				g.add('unrecognised');
 			}
 
-			const { mime, data } = await downloadImage(book.image.desktop.image);
+			const { mime, data } = await downloadImage(images[0].url);
 
 			const concurrency = 5;
 
-			const results = await pMap(parts.reverse(), async ({ url }, i) => {
+			const parts = await pMap(chapters.reverse(), async ({ slug }, i) => {
 				try {
-					return fetchPart({ bookAlias, partAlias: last(url.split('/').filter(s => s)) });
+					return fetchJson(bookAlias + `/chapters/` +  slug );
 				} catch (_) {
-					return fetchPart({ bookAlias, partAlias: last(url.split('/').filter(s => s)) });
+					return fetchJson(bookAlias + `/chapters/` +  slug );
 				} finally {
-					percent = Math.max(percent, ((i + 1) * 100 / parts.length) | 0);
+					percent = Math.max(percent, ((i + 1) * 100 / chapters.length) | 0);
 				}
 			}, { concurrency });
 
-			const images = [];
+			const assets = [];
 
-			const body = processHtml(pageTemplate({
-				title: book.title,
-				parts: results,
-			}), images);
+			const body = processHtml(pageTemplate({	title, parts}), assets);//.replace(/<\/(section|header)><section><header><p>(.*?)\s+\(часть\s*(\d+)\)<\/p><\/header>/g, (_, tagBefore, title, chapter) => +chapter === 1 ? `<\/${tagBefore}><section><header><p>${title}<\/p><\/header>` : '');
 
-			const annotation = processHtml(book.description, images);
+			const annotation = processHtml(description, assets);
 
 			const doc = parse(fb2Template({
 				NS,
 				genres: Array.from(g),
-				title: book.title,
+				title,
 				annotation,
-				//lang: 'jp',//todo
-				author: book.author,
+				lang: country ? country.code : undefined,
+				author: author ? author.name : undefined,
 				programName: APP_TITLE,
 				bookAlias,
 				shortDate: d.format('YYYY-MM-DD'),
@@ -301,7 +295,7 @@
 				body,
 				attaches: [
 					{ id: 'cover', mime, data },
-					... await pMap(images, async image => Object.assign(image, await downloadImage(image.src)), { concurrency })
+					... await pMap(assets, async image => Object.assign(image, await downloadImage(image.src)), { concurrency })
 				]
 			}), 'application/xml');
 

@@ -82,24 +82,13 @@ export const genresMap = {
 }
 
 /**
- * @param {string} entry
+ * @param {string} url
  */
-async function fetchJson(entry, query) {
+export async function fetchJson(url) {
     return (await fetch(
-        `https://xn--80ac9aeh6f.xn--p1ai/v1/${entry}/get/?` + Object.keys(query).map(k => `${k}=${query[k]}`).join('&'),
+        `https://xn--80ac9aeh6f.xn--p1ai/api/v2/books/` + url,
         { credentials: 'include' }
     )).json();
-}
-
-export const fetchBook = fetchJson.bind(null, 'book');
-export const fetchPart = fetchJson.bind(null, 'part');
-
-/**
- * @export
- * @param {string[]} a
- */
-export function last(a) {
-    return a[a.length - 1];
 }
 
 const B64_RE = /^\s*data:([image\/jpnf]+);base64/;
