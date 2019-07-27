@@ -185,6 +185,9 @@ export function processHtml(raw, images) {
 
     let doc = parse(raw, 'text/html');
 
+    doc.querySelectorAll('.message-delete').forEach(e => {
+       e.remove();
+    });
     doc.querySelectorAll('i,em').forEach(e => {
         replaceTag(doc, e, 'emphasis');
     });
