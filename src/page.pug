@@ -3,8 +3,8 @@ body
     header
         p= title
     each p in parts
-        if p.content
+        if p.text && p.text.text
             section
                 header
-                    p= p.title
-                | !{p.content}
+                    p= p.title.trim()
+                | !{p.text.text}
