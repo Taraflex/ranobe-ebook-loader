@@ -18,15 +18,15 @@ module.exports = {
 	},
 	node: false,
 	optimization: {
-		//minimize:false,
 		minimizer: [new TerserPlugin({
+			extractComments: false,
 			terserOptions: {
 				ecma: 7,
 				module: true,
 				compress: { passes: 2 },
 				output: { comments: /^\s+[=@]+(?!t)/ },
 			}
-		})],
+		})]
 	},
 	module: {
 		rules: [
