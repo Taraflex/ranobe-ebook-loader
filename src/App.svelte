@@ -227,7 +227,7 @@
 	import * as fb2Template from './fb2.pug';
 	import * as pageTemplate from './page.pug';
 	import { onMount } from 'svelte';
-	import { fetchJson, processHtml, parse, downloadImage, genresMap, replaceTag } from './app.js';
+	import { fetchJson, processHtml, parse, downloadImage, genresMap, replaceTag } from './utils.js';
 
 	const NS = "http://www.gribuser.ru/xml/fictionbook/2.0";
 
