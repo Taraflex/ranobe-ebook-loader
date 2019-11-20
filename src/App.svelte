@@ -251,7 +251,7 @@
 			percent = 0;
 
 			const bookAlias = location.pathname.split('/', 2).find(Boolean);
-			const { genres, chapters, author, description, createTime, title, images, country } = await fetchJson( bookAlias );
+			const { genres, author, description, createTime, title, images, country } = await fetchJson( bookAlias );
 			const d = dayjs(createTime);
 
 			const g = new Set(genres.map(g => genresMap[g.title]));
@@ -261,15 +261,17 @@
 				g.add('unrecognised');
 			}
 
-			const { mime, data } = await downloadImage(images[0].url);
+			const { mime, data } = await downloadImage(images.find(b => b.processor === 'book').url);
 
 			const concurrency = 5;
 
+			const {items : chapters} = await fetchJson(bookAlias + '/chapters');
+
 			const parts = await pMap(chapters.reverse(), async ({ slug }, i) => {
 				try {
-					return fetchJson(bookAlias + `/chapters/` +  slug );
+					return fetchJson(bookAlias + '/chapters/' + slug);
 				} catch (_) {
-					return fetchJson(bookAlias + `/chapters/` +  slug );
+					return fetchJson(bookAlias + '/chapters/' + slug);
 				} finally {
 					percent = Math.max(percent, ((i + 1) * 100 / chapters.length) | 0);
 				}
