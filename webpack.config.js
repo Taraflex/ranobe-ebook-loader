@@ -72,6 +72,10 @@ module.exports = {
 // @downloadURL  https://raw.githubusercontent.com/Taraflex/ranobe-rf-fb2-loader/master/build/ranobe-rf-fb2-loader.user.js
 // @updateURL    https://raw.githubusercontent.com/Taraflex/ranobe-rf-fb2-loader/master/build/ranobe-rf-fb2-loader.user.js
 // @match        https://xn--80ac9aeh6f.xn--p1ai/*
+// @run-at       document-body
+// @homepageURL  https://github.com/Taraflex/ranobe-rf-fb2-loader
+// @supportURL   https://github.com/Taraflex/ranobe-rf-fb2-loader/issues
+// @noframes
 // ==/UserScript==
 `,
 			raw: true,
