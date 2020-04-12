@@ -34,19 +34,9 @@ const unescape = createEscaper();
 
 //todo подобрать лучшие соответствия http://www.fictionbook.org/index.php/%D0%96%D0%B0%D0%BD%D1%80%D1%8B_FictionBook_2.1
 export const genresMap = {
-    "Adult": "home_sex",
-    "Josei": "sf_action",
-    "Mature": "",
-    "Shounen": "sf_action",
-    "Xianxia": "sf_fantasy",
-    "Xuanhuan": "sf_fantasy",
-    "Боевик": "det_action",
-    "Боевые Искусства": "fantasy_fight",
-    "Вампиры": "vampire_book",
-    "Виртуальный Мир": "sf",
+    "Боевые искусства": "fantasy_fight",
     "Гарем": "",
-    "Гендерная Интрига": "",
-    "Героическое Фэнтези": "sf_heroic",
+    "Гендерная интрига": "",
     "Детектив": "detective",
     "Дзёсэй": "sf_action",
     "Драма": "dramaturgy",
@@ -55,30 +45,31 @@ export const genresMap = {
     "Комедия": "humor",
     "Меха": "sf",
     "Мистика": "sf_horror",
-    "Научная Фантастика": "sf",
-    "Оригинальный сюжет": "",
+    "Научная фантастика": "sf",
     "Повседневность": "",
+    "Постапокалипсис": "",
     "Приключения": "adventure",
     "Психология": "sci_psychology",
     "Романтика": "",
-    "Сверхъестественное": "sf_horror",
-    "Смена Пола": "",
+    "Сёдзе-ай": "",
+    "Сёдзе": "",
+    "Сёнэн": "sf_action",
     "Спорт": "home_sport",
     "Сэйнэн": "sf_action",
-    "Сёдзе": "",
-    "Сёдзе-ай": "",
-    "Сёнэн": "sf_action",
     "Трагедия": "",
     "Триллер": "thriller",
     "Ужасы": "sf_horror",
-    "Уся": "fantasy_fight",
     "Фэнтези": "sf_fantasy",
-    "Хентай": "home_sex",
-    "Школьная Жизнь": "children",
+    "Школьная жизнь": "children",
     "Экшн": "sf_action",
     "Эротика": "love_erotica",
     "Этти": "love_erotica",
-    "Юри": ""
+    "Юри": "",
+    "Adult": "home_sex",
+    "Mature": "",
+    "Wuxia": "fantasy_fight",
+    "Xianxia": "sf_fantasy",
+    "Xuanhuan": "sf_fantasy",
 }
 
 /**
@@ -186,7 +177,7 @@ export function processHtml(raw, images) {
     let doc = parse(raw, 'text/html');
 
     doc.querySelectorAll('.message-delete').forEach(e => {
-       e.remove();
+        e.remove();
     });
     doc.querySelectorAll('i,em').forEach(e => {
         replaceTag(doc, e, 'emphasis');
@@ -200,7 +191,7 @@ export function processHtml(raw, images) {
     doc.querySelectorAll('div').forEach(e => {
         replaceTag(doc, e, 'p');
     });
-    
+
     doc.querySelectorAll('body :not(section):not(emphasis):not(code):not(header):not(strong):not(strikethrough):not(p):not(empty-line):not(sub):not(sup):not(img)').forEach(e => {
         replaceTag(doc, e, 'code');
     });
