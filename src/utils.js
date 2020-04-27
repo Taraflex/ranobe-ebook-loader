@@ -179,6 +179,12 @@ export function processHtml(raw, images) {
     doc.querySelectorAll('.message-delete').forEach(e => {
         e.remove();
     });
+    doc.querySelectorAll('span').forEach(e => {
+        while (e.firstChild) {
+            e.parentNode.insertBefore(e.firstChild, e);
+        }
+        e.remove();
+    });
     doc.querySelectorAll('i,em').forEach(e => {
         replaceTag(doc, e, 'emphasis');
     });
