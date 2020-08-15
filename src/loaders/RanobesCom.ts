@@ -5,9 +5,6 @@ import { concurrency, loadDom } from '../utils';
 import { Base } from './Base';
 
 export class RanobesCom extends Base {
-    extractTitle(doc: Document) {
-        return doc?.querySelector('h1').firstChild.textContent;
-    }
 
     async init() {
         this.bookAlias = (document.querySelector('.r-fullstory-chapters-foot > a:nth-child(3n)') as HTMLAnchorElement).href.split('/', 5).slice(-1)[0];
@@ -21,13 +18,8 @@ export class RanobesCom extends Base {
             .map((a: HTMLAnchorElement) => ({ name: a.textContent, homePage: a.href }))
     }
 
-    get homePage() {
-        return location.href;
-    }
-
     async parts() {
         const { bookAlias } = this;
-
         const items: string[] = [];
 
         for (let pageIndex = 1; ; ++pageIndex) {
@@ -52,7 +44,7 @@ export class RanobesCom extends Base {
                         title = this.extractTitle(doc);
                         const nav = doc.querySelector('.splitnewsnavigation');
                         if (nav) {
-                            nav.querySelectorAll(`a[href^="https://ranobes.com/chapters/${this.bookAlias}/"]`).forEach((a: HTMLAnchorElement) => pages.push(a.href));
+                            nav.querySelectorAll(`a[href^="https://ranobes.com/chapters/${bookAlias}/"]`).forEach((a: HTMLAnchorElement) => pages.push(a.href));
                         }
                     }
                 }

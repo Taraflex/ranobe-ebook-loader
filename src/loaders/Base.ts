@@ -16,7 +16,14 @@ export abstract class Base {
         return this.d.format(f);
     }
 
+    extractTitle(doc: Document) {
+        return doc?.querySelector('h1').firstChild.textContent;
+    }
+
+    get homePage() {
+        return location.href;
+    }
+
     abstract async init(): Promise<void>;
-    abstract get homePage(): string;
     abstract async parts(): Promise<any[]>;
 }
