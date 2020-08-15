@@ -1,0 +1,30 @@
+{
+    "extends": "@tsconfig/svelte/tsconfig.json",
+    "include": [
+        "src/**/*"
+    ],
+    "compilerOptions": {
+        "alwaysStrict": true,
+        "strictBindCallApply": true,
+        "module": "esnext",
+        "baseUrl": ".",
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "sourceMap": false,
+        "target": "es2018",
+        "resolveJsonModule": true,
+        "esModuleInterop": false,
+        "allowSyntheticDefaultImports": true,
+        "noEmitOnError": true,
+        "noEmitHelpers": true,
+        "lib": [
+            "dom",
+            "es2018"
+        ]
+    },
+    "exclude": [
+        "build",
+        "dist",
+        "node_modules"
+    ]
+}

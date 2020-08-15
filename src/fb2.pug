@@ -4,8 +4,12 @@ FictionBook(xmlns=NS xmlns:l="http://www.w3.org/1999/xlink")
         title-info
             each g in genres
                 genre= g
-            author
-                nickname= author
+            each author in authors
+                author
+                    first-name= author.name
+                    last-name/
+                    if author.homePage
+                        home-page= author.homePage
             book-title= title
             if annotation
                 annotation !{annotation}
@@ -15,12 +19,15 @@ FictionBook(xmlns=NS xmlns:l="http://www.w3.org/1999/xlink")
             if lang
                 src-lang= lang
         document-info
-            author
-                nickname ранобэ.рф
-                home-page https://xn--80ac9aeh6f.xn--p1ai/#{bookAlias}/
+            each author in authors
+                author
+                    first-name= author.name
+                    last-name/
+                    if author.homePage
+                        home-page= author.homePage
             program-used= programName
             date(value=shortDate)= fullDate
-            src-url https://xn--80ac9aeh6f.xn--p1ai/#{bookAlias}/
+            src-url= homePage
             id= bookAlias
             version 1
     body !{body}
