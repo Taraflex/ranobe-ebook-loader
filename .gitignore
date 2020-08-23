@@ -61,3 +61,7 @@ typings/
 .next
 
 *-lock.json
+build/*.js
+!build/*.user.js
+!build/*.meta.js
+todo
