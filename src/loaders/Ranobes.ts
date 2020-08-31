@@ -8,7 +8,7 @@ export class Ranobes extends Base {
     public static readonly component = 'btn btn-block';
     public static readonly color = (a: number) => `rgba(149,172,124,${a})`;
 
-    public static injectTarget(): HTMLElement {
+    public static get injectTarget(): HTMLElement {
         return document.getElementById('mc-fs-rate');
     }
 

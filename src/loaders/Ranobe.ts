@@ -1,7 +1,9 @@
 import dayjs from 'dayjs';
 import pMap from 'p-map';
-import { concurrency, fetchJson, ImageInfoMap, downloadImage, parse } from '../utils';
+import { concurrency, http, ImageInfoMap, downloadImage, parse } from '../utils';
 import { Base } from './Base';
+
+const fetchJson = http('https://xn--80ac9aeh6f.xn--p1ai/api/v2/books/');
 
 export class Ranobe extends Base {
     public static readonly spa = true;
@@ -22,8 +24,8 @@ export class Ranobe extends Base {
             observer.observe(document.getElementById('root'), { childList: true, subtree: true });
         })
     }*/
-    public static injectTarget() {
-        return document.getElementsByClassName('BookPageActions__actions')[0];
+    public static get injectTarget(): HTMLElement {
+        return document.getElementsByClassName('BookPageActions__actions')[0] as any;
     }
 
     public readonly bookAlias = location.pathname.split('/', 2).find(Boolean);

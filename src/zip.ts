@@ -1,4 +1,4 @@
-import { utf8bytes } from './utils';
+import { utf8encoder } from './utils';
 
 const crc32table = [];
 for (let n = 0; n < 256; n++) {
@@ -31,8 +31,8 @@ export function* zip(files: Iterable<{ path: string, data: string | Uint8Array }
     const centralDirectory: number[] = [];
     let filesCount = 0;
     for (const { path, data } of files) {
-        const dataBytes = data instanceof Uint8Array ? data : utf8bytes(data);
-        const pathBytes = utf8bytes(path);
+        const dataBytes = data instanceof Uint8Array ? data : utf8encoder.encode(data);
+        const pathBytes = utf8encoder.encode(path);
 
         const commonHeader = [0x0A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, ...int(crc32(dataBytes), 4), ...int(dataBytes.length, 4), ...int(dataBytes.length, 4), ...int(pathBytes.length, 2), 0x00, 0x00];
 

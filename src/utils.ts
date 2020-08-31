@@ -57,11 +57,18 @@ export async function loadDom(url: string, signal: AbortSignal) {
     return resp.status === 200 ? parse(await resp.text()) : null;
 }
 
-export async function fetchJson(url: string, signal: AbortSignal) {
-    return (await fetch(
-        `https://xn--80ac9aeh6f.xn--p1ai/api/v2/books/` + url,
-        { credentials: 'include', signal }
-    )).json();
+export function response2err(r: { status: number, statusText: string }) {
+    throw { name: r.statusText, message: r.status };
+}
+
+export function http(baseurl: string) {
+    return async function (url: string, signal: AbortSignal) {
+        const response = await fetch(baseurl + url, { credentials: 'include', signal, headers: { 'x-requested-with': 'XMLHttpRequest' } });
+        if (response.status >= 400) {
+            throw response2err(response);
+        }
+        return response.json();
+    }
 }
 
 function lastMatch(s: string, re: RegExp) {
@@ -170,7 +177,7 @@ async function fetchImage(url: string, cache: ImageInfoMap, signal: AbortSignal)
             const response = await fetch(url, { credentials: 'include', cache: 'force-cache', referrer: location.href, signal: breaker.signal });
             if (cache.has(url)) return cache.get(url);
             if (response.status >= 400) {
-                throw { name: response.statusText, message: response.status }
+                throw response2err(response);
             }
             if (cache.has(response.url)) return cache.get(response.url);
             return await processBlob(response.url, await response.blob());
@@ -201,7 +208,7 @@ async function fetchImage(url: string, cache: ImageInfoMap, signal: AbortSignal)
                 },
                 onload(r) {
                     if (r.status >= 400) {
-                        _abort({ name: r.statusText, message: r.status })
+                        _abort(response2err(r))
                     } else {
                         def.resolve(r);
                         breaker.signal.removeEventListener('abort', abort);
@@ -308,7 +315,7 @@ export async function processHtml(raw: string, ctrl: AbortController, tags: Eboo
         replaceTags(doc, tags.emphasis, 'i', 'em', 'dfn', 'var', 'q', 'dd', 'address');
         replaceTags(doc, tags.strong, 'b', 'strong', 'mark');
         replaceTags(doc, tags.strikethrough, 's', 'strike', 'del');
-        replaceTags(doc, tags.underline, 'u', 'ins', 'abbr');
+        replaceTags(doc, tags.underline, 'u', 'ins', 'abbr', 'a');
         doc.querySelectorAll('.game-message,.quote').forEach(e => replaceTag(doc, e, blockquote));
 
         doc.querySelectorAll(`body :not(header):not(section):not(${tags.emphasis}):not(${tags.strong}):not(${tags.strikethrough}):not(${tags.underline}):not(${blockquote}):not(sub):not(sup):not(img):not(h1)`).forEach(e => {
@@ -399,7 +406,6 @@ export function inject(node: HTMLElement, parent: HTMLElement) {
     }
 }
 
-
 export function stringify(o: any): string {
     if (!o || o === !!o || o === +o) return String(o);
     if (o.constructor === String) return o as string;
@@ -428,19 +434,9 @@ export function sanitizeFilename(input: string) {
         .replace(windowsTrailingRe, replacement);
 }
 
-export function concatBuffers(a: Uint8Array, b: ArrayLike<number>) {
-    const tmp = new Uint8Array(a.byteLength + b.length);
-    tmp.set(a, 0);
-    tmp.set(b, a.byteLength);
-    return tmp;
-}
-
-const encoder = new TextEncoder();
-export function utf8bytes(s: string) {
-    return encoder.encode(s);
-}
+export const utf8encoder = new TextEncoder();
 
 export async function sha256(s: string | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | Float32Array | Float64Array | DataView | ArrayBuffer) {
-    const b = new Uint8Array(await crypto.subtle.digest('SHA-256', s.constructor === String ? encoder.encode(s) : s as Exclude<typeof s, string>));
+    const b = new Uint8Array(await crypto.subtle.digest('SHA-256', s.constructor === String ? utf8encoder.encode(s) : s as Exclude<typeof s, string>));
     return '_' + btoa(String.fromCharCode.apply(null, b as any)).replace(/\//g, '_').replace(/\+/g, '-').replace(/=+$/, '');
 }

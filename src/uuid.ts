@@ -1,11 +1,13 @@
 // browser version of https://www.npmjs.com/package/uuidv5
 
-import { utf8bytes, concatBuffers } from './utils';
+import { utf8encoder } from './utils';
 
 const NAMESPACE_NULL = uuidFromString('00000000-0000-0000-0000-000000000000');
 
 async function createUUIDv5Binary(name: Uint8Array, namespace: Uint8Array) {
-    const c = concatBuffers(namespace, name);
+    const c = new Uint8Array(namespace.byteLength + name.length);
+    c.set(namespace, 0);
+    c.set(name, namespace.byteLength);
 
     const digest = new Uint8Array(await crypto.subtle.digest('SHA-1', c));
     const uuid = new Uint8Array(16);
@@ -59,6 +61,6 @@ function uuidFromString(uuid: string) {
 
 let NAMESPACE_APP: Uint8Array = null;
 export async function createUUIDv5(name: string) {
-    NAMESPACE_APP || (NAMESPACE_APP = await createUUIDv5Binary(utf8bytes(APP_TITLE), NAMESPACE_NULL));
-    return uuidToString(await createUUIDv5Binary(utf8bytes(name), NAMESPACE_APP));
+    NAMESPACE_APP || (NAMESPACE_APP = await createUUIDv5Binary(utf8encoder.encode(APP_TITLE), NAMESPACE_NULL));
+    return uuidToString(await createUUIDv5Binary(utf8encoder.encode(name), NAMESPACE_APP));
 }
