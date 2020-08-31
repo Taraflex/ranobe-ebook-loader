@@ -1,0 +1,33 @@
+description
+    title-info
+        each g in genres
+            genre= g
+        each author in authors
+            author
+                first-name= author.name
+                last-name/
+                if author.homePage
+                    home-page= author.homePage
+        book-title= title
+        if annotation
+            annotation !{annotation}
+        if keywords
+            keywords= keywords
+        if cover
+            coverpage
+                image(l:href="#cover")/
+        lang ru
+        if lang
+            src-lang= lang
+    document-info
+        each author in authors
+            author
+                first-name= author.name
+                last-name/
+                if author.homePage
+                    home-page= author.homePage
+        program-used= programName
+        date(value=shortDate)= fullDate
+        src-url= homePage
+        id= bookAlias
+        version 1

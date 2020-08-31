@@ -1,6 +1,6 @@
 <script lang="ts">
-    import fb2BookTpl from './templates/fb2/book.pug';
-    import fb2ContentTpl from './templates/fb2/content.pug';
+    import fb2Description from './templates/fb2/description.pug';
+    import fb2Content from './templates/fb2/content.pug';
 
     import epubToc from './templates/epub/toc.pug';
     import epubNav from './templates/epub/nav.pug';
@@ -17,7 +17,7 @@
     import NotificationsDisplay from './NotificationsDisplay.svelte';
     import { saveAs } from 'file-saver';
     import { onMount, onDestroy, tick } from 'svelte';
-    import { processHtml, parse, downloadImage, replaceTag, inject, patchApi, notifications, formats, concurrency, sha256 } from './utils';
+    import { processHtml, parse, downloadImage, inject, patchApi, notifications, formats, concurrency, sha256 } from './utils';
     import waitEvents from './wait-events';
     import { createUUIDv5 } from './uuid';
     import type { ImageInfoMap, EbookFormat } from './utils';
@@ -163,29 +163,27 @@
                 case formats.FB2:
                     const cover = await (loader.covers[0] && downloadImage('Обложка', loader.covers[0], attaches, ctrl));
                     await cover?.b64();
-                    const doc = parse(
-                        fb2BookTpl({
+                    const blobParts = [
+                        '<?xml version="1.0" encoding="utf-8"?><FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">',
+                        fb2Description({
                             ...loader,
                             cover,
-                            body: await processHtml(fb2ContentTpl({ title: loader.title, parts }), ctrl, format, attaches),
                             annotation: await processHtml('<div>' + loader.description + '</div>', ctrl, format),
-                            images: Array.from(new Set(attaches.values())),
                             shortDate: loader.date('YYYY-MM-DD'),
                             fullDate: loader.date('DD.MM.YYYY'),
                         }),
-                        'application/xml'
-                    );
+                        '<body>',
+                        (await processHtml(fb2Content({ title: loader.title, parts }), ctrl, format, attaches)).replace(/<(\/)?header>/g, '<$1title>'),
+                        '</body>',
+                    ];
+                    for (let img of new Set(attaches.values())) {
+                        if (img.cachedB64) {
+                            blobParts.push(`<binary id="${img.id}" content-type="${img.mime}">`, img.cachedB64, '</binary>');
+                        }
+                    }
                     attaches.clear();
-                    //todo optimize
-                    doc.querySelectorAll('header').forEach(e => replaceTag(doc, e, 'title'));
-
-                    const fb2 = new Blob(
-                        [
-                            new XMLSerializer().serializeToString(doc),
-                            // '<?xml version="1.0" encoding="utf-8" ?>' + doc.documentElement.outerHTML
-                        ],
-                        { type: 'application/x-fictionbook+xml;charset=utf-8' }
-                    );
+                    blobParts.push('</FictionBook>');
+                    const fb2 = new Blob(blobParts, { type: 'application/x-fictionbook+xml;charset=utf-8' });
                     return saveAs(fb2, loader.bookAlias + '.fb2');
             }
         } catch (e) {
