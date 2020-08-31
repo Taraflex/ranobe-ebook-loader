@@ -66,7 +66,7 @@
             const tm = resolve => setTimeout(resolve, 2000);
 
             while (!c.signal.aborted) {
-                while (!(injectTarget = Loader.injectTarget())) {
+                while (!(injectTarget = Loader.injectTarget)) {
                     await new Promise(tm);
                     if (c.signal.aborted) return;
                 }
@@ -75,7 +75,7 @@
                 await new Promise(tm);
             }
         } else {
-            injectTarget = await Loader.injectTarget();
+            injectTarget = await Loader.injectTarget;
         }
     });
 
@@ -114,7 +114,7 @@
 
             switch (format) {
                 case formats.EPUB:
-                    parts.unshift({ title: 'Аннотация', text: loader.covers.map(c => loader.description + `<p><img src="${c}"/></p>`).join('') });
+                    parts.unshift({ title: 'Аннотация', text: loader.description + loader.covers.map(c => `<p><img src="${c}"/></p>`).join('') });
                     const chapters = await pMap(
                         parts,
                         async part => {
@@ -128,17 +128,18 @@
 
                     const images = Array.from(new Set(attaches.values()));
 
-                    const annotation = parse(chapters[0].text);
+                    const annotation = parse(chapters[0].text).querySelector('section');
+                    annotation.firstElementChild.remove();
                     const renderInfo = {
                         ...loader,
                         cover: attaches.get(loader.covers[0]),
                         isoDate: loader.isoDate,
                         uuid: 'urn:uuid:' + (await createUUIDv5(loader.title + loader.subtitle)),
-                        annotation: annotation.body.innerText,
+                        annotation: annotation.innerText,
                         chapters,
                         images,
                     };
-                    annotation.open();
+                    annotation.ownerDocument.open();
 
                     attaches.clear();
 
