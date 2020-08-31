@@ -1,0 +1,9 @@
+doctype html
+body
+    header
+        p= title
+    each part in parts
+        section
+            header
+                p= part.title
+            | !{part.text}
