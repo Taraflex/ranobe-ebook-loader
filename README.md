@@ -5,7 +5,7 @@
 
 ## Как использовать
 
-- Установить расширение [Tampermonkey](https://tampermonkey.net/) (рекомендуемый вариант) или [Greasemonkey](https://www.greasespot.net/) или [Violentmonkey](https://violentmonkey.github.io/get-it/) или любое другое для поддержки юзерскриптов в вашем браузере.
+- Установить расширение [Violentmonkey](https://violentmonkey.github.io/get-it/) (рекомендуемый вариант, так как разрешает кроссдоменные запросы для скачивания иллюстраций) или [Tampermonkey](https://tampermonkey.net/) (будет спрашивать разрешение для скачивания иллюстраций со сторонних хостов) или [Greasemonkey](https://www.greasespot.net/) (скачивание иллюстраций со сторонних хостов работать не будет - в процессе реализации) или любое другое для поддержки юзерскриптов в вашем браузере.
 - [Нажать для установки юзерскрипта](https://raw.githubusercontent.com/Taraflex/ranobe-ebook-loader/master/build/ranobe-ebook-loader.user.js)
 - Перейти на страницу с книгой и дождаться её прогрузки
 - На странице появятся кнопки для скачивания книг (в Firefox кнопки также доступны через контекстное меню страницы)
