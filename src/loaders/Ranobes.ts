@@ -16,13 +16,13 @@ export class Ranobes extends Base {
         this.bookAlias = (document.querySelector('.r-fullstory-chapters-foot > a:nth-child(3n)') as HTMLAnchorElement).href.split('/', 5).slice(-1)[0];
         this.covers = [(document.querySelector('[itemprop="image"]') as HTMLAnchorElement).href];
         this.d = dayjs(document.querySelector('[itemprop="datePublished"]').getAttribute('content'));
-        this.genres = Array.from(document.querySelectorAll('[itemprop="genre"] a')).map(a => a.textContent);
-        this.keywords = Array.from(document.querySelectorAll('[itemprop="keywords"] a')).map(a => a.textContent).join(', ');
+        this.genres = Array.from(document.querySelectorAll('[itemprop="genre"] a'), a => a.textContent);
+        this.keywords = Array.from(document.querySelectorAll('[itemprop="keywords"] a'), a => a.textContent).join(', ');
         this.title = this.extractTitle(document);
         this.subtitle = document.querySelector('[itemprop="alternateName"]').textContent;
         this.description = document.querySelector('[itemprop="description"]').innerHTML;
         //todo this.lang = undefined;
-        this.authors = Array.from(document.querySelectorAll('[itemprop="creator"] a')).map((a: HTMLAnchorElement) => ({ name: a.textContent, homePage: a.href }))
+        this.authors = Array.from(document.querySelectorAll('[itemprop="creator"] a'), (a: HTMLAnchorElement) => ({ name: a.textContent, homePage: a.href }));
     }
 
     async parts(ctrl: AbortController, cache: ImageInfoMap) {
