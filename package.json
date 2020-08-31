@@ -1,6 +1,6 @@
 {
   "name": "ranobe-ebook-loader",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Юзерскрипт для скачивания книг в формате fb2 c https://ранобэ.рф/ и https://ranobes.com/",
   "homepage": "https://github.com/Taraflex/ranobe-ebook-loader",
   "bugs": {
@@ -22,7 +22,6 @@
     "@rollup/plugin-typescript": "^5.0.2",
     "@tsconfig/svelte": "^1.0.10",
     "@types/file-saver": "^2.0.1",
-    "@types/streamsaver": "^2.0.0",
     "@types/tampermonkey": "^4.0.0",
     "autoprefixer": "^9.8.6",
     "cssnano": "^4.1.10",
@@ -38,10 +37,8 @@
     "rollup-plugin-svelte": "^6.0.0",
     "rollup-plugin-terser": "^7.0.1",
     "sass": "^1.26.10",
-    "seng-disposable-event-listener": "^2.0.1",
-    "streamsaver": "^2.0.4",
     "svelte": "^3.24.1",
-    "svelte-preprocess": "^4.1.2",
+    "svelte-preprocess": "^4.2.0",
     "tslib": "^2.0.1",
     "typescript": "^4.0.2"
   },

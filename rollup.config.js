@@ -22,8 +22,6 @@ export default {
 	},
 	plugins: [
 		svelte({
-			dev,
-			//@ts-ignore
 			preprocess: sveltePreprocess({
 				sourceMap: false,
 				typescript: {
@@ -31,11 +29,8 @@ export default {
 						sourceMap: false
 					}
 				},
-				//babel: { sourceMaps: false },
 				scss: { sourceMap: false },
 				sass: { sourceMap: false },
-				stylus: { sourcemap: false },
-				coffeescript: { sourceMap: false },
 				postcss: dev ? {
 					map: false,
 					plugins: [
