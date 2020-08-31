@@ -1,19 +1,8 @@
 <script lang="ts">
-    import { createEventDispatcher, onMount, onDestroy } from 'svelte';
-    import { addEventListener } from 'seng-disposable-event-listener';
+    import { createEventDispatcher } from 'svelte';
 
     export let percent = 0;
     export let color: (a: number) => string = () => 'red';
-    export let unloadMessage: string;
-
-    let mounted = false;
-    let destroy: () => void;
-
-    //todo check work
-    $: unloadMessage && mounted && (destroy?.(), (destroy = addEventListener(window, 'beforeunload', () => unloadMessage)));
-
-    onMount(() => (mounted = true));
-    onDestroy(() => destroy?.());
 
     const emit = createEventDispatcher();
     function cancel() {

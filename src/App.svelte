@@ -209,7 +209,7 @@
 </style>
 
 {#if loading}
-    <Preloader {percent} on:cancel={abort} color={Loader.color} unloadMessage="Закрытие страницы прервёт скачивание книги" />
+    <Preloader {percent} on:cancel={abort} color={Loader.color} />
 {:else if injectTarget}
     <Window on:save={loadFB2} />
     <ContextMenu>
