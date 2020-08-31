@@ -1,19 +1,12 @@
-import 'nodelist-foreach-polyfill';
-
-import App from './App.svelte';
-
-let f = () => {
+const f = () => {
     document.removeEventListener('DOMContentLoaded', f);
 
     const target = document.createElement('div');
-    target.style.zIndex = '16777270';
-    target.style.position = 'fixed';
-    target.style.top = '0';
-    target.style.left = '0';
+    target.id = APP_TITLE;
 
     document.body.appendChild(target);
 
-    new App({ target });
+    import('./App.svelte').then(o => new o.default({ target }));
 };
 if (document.readyState === 'complete' || document.readyState === 'interactive') {
     f();

@@ -6,49 +6,94 @@ import sveltePreprocess from 'svelte-preprocess';
 import pug from 'rollup-plugin-pug';
 import typescript from '@rollup/plugin-typescript';
 import replace from '@rollup/plugin-replace';
+import userscript from './rollup-plugin-userscript';
 
-const sourceMap = false;
-const { name: APP_TITLE, version: APP_VERSION, description: APP_DESCRIPTION } = require('./package.json');
+const { name: APP_TITLE, version: APP_VERSION } = require('./package.json');
+const APP_ICON = 'https://raw.githubusercontent.com/Taraflex/ranobe-ebook-loader/master/icons/32.png';
+const dev = !!process.env.ROLLUP_WATCH
 
 export default {
 	input: 'src/main.ts',
+	preserveEntrySignatures: false,
+	strictDeprecations: true,
 	output: {
-		sourcemap: sourceMap,
-		format: 'iife',
-		name: 'app',
-		file: 'build/ranobe-rf-fb2-loader.user.js'
+		dir: 'build',
+		sourcemap: dev && 'inline'
 	},
 	plugins: [
-		svelte({ dev: sourceMap, preprocess: sveltePreprocess() }),
-		resolve({ dedupe: ['svelte'] }),
-		commonjs({ sourceMap }),
-		typescript({ sourceMap }),
-		replace({
-			include: /\.svelte$/,
-			values: { APP_VERSION: JSON.stringify(APP_VERSION), APP_TITLE: JSON.stringify(APP_TITLE) }
+		svelte({
+			dev,
+			//@ts-ignore
+			preprocess: sveltePreprocess({
+				sourceMap: false,
+				typescript: {
+					compilerOptions: {
+						sourceMap: false
+					}
+				},
+				//babel: { sourceMaps: false },
+				scss: { sourceMap: false },
+				sass: { sourceMap: false },
+				stylus: { sourcemap: false },
+				coffeescript: { sourceMap: false },
+				postcss: dev ? {
+					map: false,
+					plugins: [
+						require('autoprefixer')
+					]
+				} : {
+						map: false,
+						plugins: [
+							require('postcss-flexbugs-fixes'),
+							require('autoprefixer'),
+							require('cssnano')
+						]
+					}
+			})
 		}),
-		terser({
+		resolve({ dedupe: ['svelte'] }),
+		commonjs({ sourceMap: dev }),
+		typescript({
+			inlineSourceMap: dev,
+			inlineSources: dev,
+		}),
+		replace({
+			include: /\.(ts|svelte)$/,
+			values: {
+				APP_TITLE_noquotes: APP_TITLE,
+				APP_ICON: `"${APP_ICON}"`,
+				APP_VERSION: `"${APP_VERSION}"`,
+				APP_TITLE: `"${APP_TITLE}"`,
+			}
+		}),
+		dev ? 0 : terser({
 			ecma: 2018,
 			module: true,
 			format: {
-				//beautify: true,
-				comments: /^\s+[=@]+(?!t)/,
-				preamble: `// ==UserScript==
-// @name         ${APP_TITLE}
-// @namespace    taraflex
-// @version      ${APP_VERSION}
-// @description  ${APP_DESCRIPTION}
-// @author       taraflex.red@gmail.com
-// @downloadURL  https://raw.githubusercontent.com/Taraflex/ranobe-rf-fb2-loader/master/build/ranobe-rf-fb2-loader.user.js
-// @match        https://xn--80ac9aeh6f.xn--p1ai/*
-// @match        https://ranobes.com/ranobe/*
-// @run-at       document-body
-// @homepageURL  https://github.com/Taraflex/ranobe-rf-fb2-loader
-// @supportURL   https://github.com/Taraflex/ranobe-rf-fb2-loader/issues
-// @noframes
-// ==/UserScript==`
+				comments: /^\s+[=@][^t]/
 			}
 		}),
-		pug({ sourceMap, pretty: true })
-	]
+		pug({ sourceMap: dev, pretty: true }),
+		userscript({
+			meta: {
+				downloadURL: 'https://raw.githubusercontent.com/Taraflex/ranobe-ebook-loader/master/build/ranobe-ebook-loader.user.js',
+				icon: APP_ICON,
+				icon64: APP_ICON.replace('32.png', '64.png'),
+				match: [
+					'https://ранобэ.рф/*',
+					'https://xn--80ac9aeh6f.xn--p1ai/*',
+					'https://ranobes.com/ranobe/*',
+					'https://tl.rulate.ru/book/*'
+				],
+				'run-at': 'document-idle',
+				grant: ['GM_registerMenuCommand', 'GM_unregisterMenuCommand', 'GM_xmlhttpRequest'],
+				connect: '*',
+				noframes: ''
+			},
+			hot: dev && 'patch'
+		})
+	].filter(Boolean),
+	watch: {
+		clearScreen: false
+	}
 };

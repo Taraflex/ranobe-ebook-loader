@@ -1,14 +1,33 @@
-<script>
-    import { createEventDispatcher } from 'svelte';
-
-    const dispatch = createEventDispatcher();
+<script lang="ts">
+    import { createEventDispatcher, onMount, onDestroy } from 'svelte';
+    import { addEventListener } from 'seng-disposable-event-listener';
 
     export let percent = 0;
+    export let color: (a: number) => string = () => 'red';
+    export let unloadMessage: string;
+
+    let mounted = false;
+    let destroy: () => void;
+
+    //todo check work
+    $: unloadMessage && mounted && (destroy?.(), (destroy = addEventListener(window, 'beforeunload', () => unloadMessage)));
+
+    onMount(() => (mounted = true));
+    onDestroy(() => destroy?.());
+
+    const emit = createEventDispatcher();
+    function cancel() {
+        emit('cancel');
+    }
 </script>
 
-<style type="text/scss">
+<style type="text/scss" global>
     @import './_mixins.scss';
-    
+
+    $uc: var(--uc);
+    $uct: var(--uct);
+    $uch: var(--uch);
+
     .u_b {
         @include overlay;
         background: rgba(255, 255, 255, 0.8);
@@ -25,19 +44,19 @@
         margin-top: 5%;
         @include fluid-type(240px, 960px, 16px, round(16px * 1.5));
         border: 0;
-        background-color: $darkBlue;
+        background-color: $uc;
         color: white;
         padding: 0 2em 0;
-        line-height: 3em;
+        line-height: 2.7em;
         border-radius: $pad;
         cursor: pointer;
-        box-shadow: 0 0 0 $pad * 2 rgba($darkBlue, 0);
+        box-shadow: 0 0 0 $pad * 2 $uct;
         transition: box-shadow 0.1s;
         &:hover,
         &:focus,
         &:active {
             outline: 0;
-            box-shadow: 0 0 0 $pad * 2 rgba($darkBlue, 0.5);
+            box-shadow: 0 0 0 $pad * 2 $uch;
         }
     }
 
@@ -48,7 +67,7 @@
         height: 100px;
         line-height: 100px;
         text-align: center;
-        color: $darkBlue;
+        color: $uc;
         @include fluid-type(240px, 960px, 14px, round(14px * 1.5));
         > * {
             width: 100%;
@@ -60,7 +79,7 @@
                 margin: 0 auto;
                 width: 15%;
                 height: 15%;
-                background-color: $darkBlue;
+                background-color: $uc;
                 border-radius: 100%;
                 animation: u_a 1.2s infinite ease-in-out both;
             }
@@ -89,7 +108,7 @@
     }
 </style>
 
-<div class="u_b">
+<div class="u_b" style="--uc: {color(1)}; --uch: {color(0.5)}; --uct: {color(0)}">
     <div class="u_c">
         <div class="u_c1" />
         <div class="u_c2" />
@@ -105,5 +124,5 @@
         <div class="u_c12" />
         {@html percent + '%'}
     </div>
-    <button class="u_cancel" on:click={() => dispatch('cancel')}>Cancel</button>
+    <button class="u_cancel" on:click={cancel}>Cancel</button>
 </div>

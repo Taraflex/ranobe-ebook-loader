@@ -1,19 +1,23 @@
 {
-    "extends": "@tsconfig/svelte/tsconfig.json",
     "include": [
         "src/**/*"
     ],
     "compilerOptions": {
+        "jsx": "preserve",
+        "moduleResolution": "node",
+        "importsNotUsedAsValues": "error",
+        "forceConsistentCasingInFileNames": true,
+        "types": [
+            "svelte",
+            "tampermonkey"
+        ],
         "alwaysStrict": true,
         "strictBindCallApply": true,
         "module": "esnext",
         "baseUrl": ".",
         "noUnusedLocals": true,
         "noUnusedParameters": true,
-        "sourceMap": false,
         "target": "es2018",
-        "resolveJsonModule": true,
-        "esModuleInterop": false,
         "allowSyntheticDefaultImports": true,
         "noEmitOnError": true,
         "noEmitHelpers": true,

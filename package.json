@@ -1,7 +1,16 @@
 {
-  "name": "ranobe-rf-fb2-loader",
-  "version": "0.1.0",
+  "name": "ranobe-ebook-loader",
+  "version": "0.2.0",
   "description": "Юзерскрипт для скачивания книг в формате fb2 c https://ранобэ.рф/ и https://ranobes.com/",
+  "homepage": "https://github.com/Taraflex/ranobe-ebook-loader",
+  "bugs": {
+    "url": "https://github.com/Taraflex/ranobe-ebook-loader/issues"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Taraflex",
+    "email": "taraflex.red@gmail.com"
+  },
   "scripts": {
     "build": "npx rollup -c",
     "start": "npx rollup -c -w"
@@ -13,26 +22,40 @@
     "@rollup/plugin-typescript": "^5.0.2",
     "@tsconfig/svelte": "^1.0.10",
     "@types/file-saver": "^2.0.1",
-    "dayjs": "^1.8.33",
+    "@types/streamsaver": "^2.0.0",
+    "@types/tampermonkey": "^4.0.0",
+    "autoprefixer": "^9.8.6",
+    "cssnano": "^4.1.10",
+    "dayjs": "^1.8.34",
     "file-saver": "^2.0.2",
     "hotkeys-js": "^3.8.1",
-    "nodelist-foreach-polyfill": "^1.2.0",
     "p-map": "2.1.0",
+    "postcss": "^7.0.32",
+    "postcss-flexbugs-fixes": "^4.2.1",
     "pug": "^3.0.0",
-    "rollup": "^2.26.0",
+    "rollup": "^2.26.8",
     "rollup-plugin-pug": "^1.1.1",
-    "rollup-plugin-svelte": "^5.2.3",
-    "rollup-plugin-terser": "^7.0.0",
+    "rollup-plugin-svelte": "^6.0.0",
+    "rollup-plugin-terser": "^7.0.1",
     "sass": "^1.26.10",
+    "seng-disposable-event-listener": "^2.0.1",
+    "streamsaver": "^2.0.4",
     "svelte": "^3.24.1",
-    "svelte-preprocess": "^4.0.12",
+    "svelte-preprocess": "^4.1.2",
     "tslib": "^2.0.1",
-    "typescript": "^3.9.7"
+    "typescript": "^4.0.2"
   },
   "prettier": {
     "arrowParens": "avoid",
     "printWidth": 1000,
     "tabWidth": 4,
     "singleQuote": true
-  }
+  },
+  "browserslist": [
+    "> 0.5%",
+    "Firefox ESR",
+    "not dead",
+    "not IE 11",
+    "not IE_Mob 11"
+  ]
 }

@@ -1,166 +1,222 @@
 <script lang="ts">
-    import pMap from 'p-map';
-    import { saveAs } from 'file-saver';
-    import { RanobeRf } from './loaders/RanobeRf';
-    import { RanobesCom } from './loaders/RanobesCom';
-    import hotkeys from 'hotkeys-js';
-    import fb2Template from './fb2.pug';
-    import pageTemplate from './page.pug';
-    import { onMount } from 'svelte';
-    import { processHtml, parse, downloadImage, replaceTag, concurrency } from './utils.js';
-    import type { Base } from './loaders/Base';
+    import fb2BookTpl from './templates/fb2/book.pug';
+    import fb2ContentTpl from './templates/fb2/content.pug';
 
-    const NS = 'http://www.gribuser.ru/xml/fictionbook/2.0';
+    import epubToc from './templates/epub/toc.pug';
+    import epubNav from './templates/epub/nav.pug';
+    import epubOpf from './templates/epub/opf.pug';
+    import epubChapter from './templates/epub/chapter.pug';
+    import epubPage from './templates/epub/page.pug';
+    import epubContainer from './templates/epub/container.pug';
+    import epubApple from './templates/epub/apple.pug';
+
+    import Window from './Window.svelte';
+    import Preloader from './Preloader.svelte';
+    import ContextMenu from './ContextMenu.svelte';
+    import ContextMenuItem from './ContextMenuItem.svelte';
+    import NotificationsDisplay from './NotificationsDisplay.svelte';
+    import { saveAs } from 'file-saver';
+    import { onMount, onDestroy, tick } from 'svelte';
+    import { processHtml, parse, downloadImage, replaceTag, inject, patchApi, notifications, formats, concurrency, sha256 } from './utils';
+    import waitEvents from './wait-events';
+    import { createUUIDv5 } from './uuid';
+    import type { ImageInfoMap, EbookFormat } from './utils';
+
+    import type { Base } from './loaders/Base';
+    import { Ranobe } from './loaders/Ranobe';
+    import { Ranobes } from './loaders/Ranobes';
+    import { Rulate } from './loaders/Rulate';
+    import { zip } from './zip';
+    import pMap from 'p-map';
+
+    const MENU_TITLE_FB2 = 'Скачать *.fb2';
+    const MENU_TITLE_EPUB = 'Скачать *.epub';
+    const Loader = {
+        'ранобэ.рф': Ranobe,
+        'xn--80ac9aeh6f.xn--p1ai': Ranobe,
+        'ranobes.com': Ranobes,
+        'tl.rulate.ru': Rulate,
+    }[location.hostname];
 
     let loading = false;
     let percent = 0;
+    let ctrl: AbortController;
+    let injectTarget: HTMLElement = null;
 
-    onMount(() => {
-        hotkeys('ctrl+s', event => {
-            event.stopImmediatePropagation();
-            event.preventDefault();
-            if (!loading) {
-                load();
+    function abort() {
+        if (ctrl) {
+            ctrl.abort();
+            ctrl = null;
+        }
+        if (loading) {
+            loading = false;
+        }
+        if (percent) {
+            percent = 0;
+        }
+    }
+
+    const c = new AbortController();
+
+    onMount(async () => {
+        if (Loader.spa) {
+            history.pushState = patchApi('pushState');
+            history.replaceState = patchApi('replaceState');
+
+            const tm = resolve => setTimeout(resolve, 2000);
+
+            while (!c.signal.aborted) {
+                while (!(injectTarget = Loader.injectTarget())) {
+                    await new Promise(tm);
+                    if (c.signal.aborted) return;
+                }
+                await waitEvents([c.signal, 'abort'], [window, 'pushState', 'replaceState', 'popstate']).promise;
+                abort();
+                await new Promise(tm);
             }
-        });
-        console.log(APP_TITLE + ' ' + APP_VERSION);
+        } else {
+            injectTarget = await Loader.injectTarget();
+        }
     });
 
-    const loaders = {
-        'ранобэ.рф': RanobeRf,
-        'xn--80ac9aeh6f.xn--p1ai': RanobeRf,
-        'ranobes.com': RanobesCom,
-    } as const;
+    onDestroy(() => {
+        c.abort();
+        abort();
+        if (Loader.spa) {
+            history.pushState['destroy']?.();
+            history.replaceState['destroy']?.();
+        }
+    });
 
-    async function load() {
+    const loadFB2 = loadBook.bind(null, formats.FB2);
+    const loadEPUB = loadBook.bind(null, formats.EPUB);
+
+    async function loadBook(format: EbookFormat) {
+        if (loading || !injectTarget) return;
         try {
+            abort();
             loading = true;
-            percent = 0;
+            notifications.clear();
 
-            const loader: Base = new loaders[location.hostname]((i: number, total: number) => (percent = Math.max(percent, (((i + 1) * 100) / total) | 0)));
-            await loader.init();
+            await tick();
+
+            ctrl = new AbortController();
+
+            const loader: Base = new Loader((i: number, total: number) => (percent = Math.max(percent, (((i + 1) * 100) / total) | 0)));
+            await loader.init(ctrl);
 
             if (loader.genres.length < 1) {
                 loader.genres.push('unrecognised');
             }
 
-            const parts = await loader.parts();
-            const images = [{ id: 'cover', src: loader.cover }];
+            const attaches: ImageInfoMap = new Map();
+            const parts = await loader.parts(ctrl, attaches);
 
-            const doc = parse(
-                fb2Template({
-                    ...loader,
-                    NS,
-                    body: processHtml(pageTemplate({ title: loader.title, parts }), images),
-                    annotation: processHtml('<div>' + loader.description + '</div>', images),
-                    programName: APP_TITLE,
-                    shortDate: loader.date('YYYY-MM-DD'),
-                    fullDate: loader.date('DD.MM.YYYY'),
-                    attaches: await pMap(images, async i => Object.assign(i, await downloadImage(i.src)), { concurrency }),
-                }),
-                'application/xml'
-            );
+            switch (format) {
+                case formats.EPUB:
+                    parts.unshift({ title: 'Аннотация', text: loader.covers.map(c => loader.description + `<p><img src="${c}"/></p>`).join('') });
+                    const chapters = await pMap(
+                        parts,
+                        async part => {
+                            part.id = await sha256(part.title);
+                            part.text = await processHtml(epubChapter(part), ctrl, format, attaches);
+                            part.text = epubPage(part);
+                            return part;
+                        },
+                        { concurrency }
+                    );
 
-            doc.querySelectorAll('header').forEach(e => replaceTag(doc, e, 'title', NS));
+                    const images = Array.from(new Set(attaches.values()));
 
-            saveAs(new Blob(['<?xml version="1.0" encoding="utf-8" ?>' + doc.documentElement.outerHTML], { type: 'text/xml;charset=utf-8' }), loader.bookAlias + '.fb2');
+                    const annotation = parse(chapters[0].text);
+                    const renderInfo = {
+                        ...loader,
+                        cover: attaches.get(loader.covers[0]),
+                        isoDate: loader.isoDate,
+                        uuid: 'urn:uuid:' + (await createUUIDv5(loader.title + loader.subtitle)),
+                        annotation: annotation.body.innerText,
+                        chapters,
+                        images,
+                    };
+                    annotation.open();
+
+                    attaches.clear();
+
+                    const epubMime = 'application/epub+zip';
+                    const epub = new Blob(
+                        Array.from(
+                            zip([
+                                //
+                                { path: 'mimetype', data: epubMime },
+                                { path: 'META-INF/container.xml', data: epubContainer() },
+                                { path: 'META-INF/com.apple.ibooks.display-options.xml', data: epubApple() },
+                                { path: 'OEBPS/toc.ncx', data: epubToc(renderInfo) },
+                                { path: 'OEBPS/nav.xhtml', data: epubNav(renderInfo) },
+                                { path: 'OEBPS/content.opf', data: epubOpf(renderInfo) },
+                                ...images.map(a => ({ path: 'OEBPS/images/' + a.id + a.ext, data: a.data() })),
+                                ...chapters.map(a => ({ path: `OEBPS/${a.id}.xhtml`, data: a.text })),
+                            ])
+                        ),
+                        { type: epubMime }
+                    );
+                    return saveAs(epub, loader.bookAlias + '.epub');
+                case formats.FB2:
+                    const cover = await (loader.covers[0] && downloadImage('Обложка', loader.covers[0], attaches, ctrl));
+                    await cover?.b64();
+                    const doc = parse(
+                        fb2BookTpl({
+                            ...loader,
+                            cover,
+                            body: await processHtml(fb2ContentTpl({ title: loader.title, parts }), ctrl, format, attaches),
+                            annotation: await processHtml('<div>' + loader.description + '</div>', ctrl, format),
+                            images: Array.from(new Set(attaches.values())),
+                            shortDate: loader.date('YYYY-MM-DD'),
+                            fullDate: loader.date('DD.MM.YYYY'),
+                        }),
+                        'application/xml'
+                    );
+                    attaches.clear();
+                    //todo optimize
+                    doc.querySelectorAll('header').forEach(e => replaceTag(doc, e, 'title'));
+
+                    const fb2 = new Blob(
+                        [
+                            new XMLSerializer().serializeToString(doc),
+                            // '<?xml version="1.0" encoding="utf-8" ?>' + doc.documentElement.outerHTML
+                        ],
+                        { type: 'application/x-fictionbook+xml;charset=utf-8' }
+                    );
+                    return saveAs(fb2, loader.bookAlias + '.fb2');
+            }
         } catch (e) {
-            console.error(e);
-            //todo better message
-            alert('Ошибка загрузки. Попробуйте снова.');
+            if (e?.name != 'AbortError') {
+                console.error(e);
+                notifications.add(e);
+            }
         } finally {
-            loading = false;
-            percent = 0;
+            abort();
         }
     }
+
+    console.log(APP_TITLE + ' ' + APP_VERSION);
 </script>
 
-<style type="text/scss">
-    .c {
-        margin: auto;
-        top: 0;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        position: absolute;
-        pointer-events: none;
-        width: 100px;
-        height: 100px;
-    }
-
-    .h {
-        width: 100%;
-        height: 100%;
-        position: absolute;
-        left: 0;
-        top: 0;
-        &:before {
-            content: '';
-            display: block;
-            margin: 0 auto;
-            width: 15%;
-            height: 15%;
-            background-color: #303745;
-            border-radius: 100%;
-            animation: sk-circleBounceDelay 1.2s infinite ease-in-out both;
-        }
-    }
-
-    @for $i from 2 through 12 {
-        .c#{$i} {
-            transform: rotate(($i - 1) * 30deg);
-            &:before {
-                animation-delay: ($i - 2) * 0.1 - 1.1s;
-            }
-        }
-    }
-
-    @keyframes sk-circleBounceDelay {
-        0%,
-        80%,
-        100% {
-            transform: scale(0);
-        }
-
-        40% {
-            transform: scale(1);
-        }
-    }
-
-    .bg {
-        background: rgba(255, 255, 255, 0.8);
-        width: 100vw;
-        height: 100vh;
-        line-height: 100vh;
-        display: block;
-        position: fixed;
-        top: 0;
-        left: 0;
-        text-align: center;
-        font-size: 16px;
-        color: #303745;
-        -moz-user-select: none;
-        -webkit-user-select: none;
-        user-select: none;
+<style type="text/scss" global>
+    @import './_mixins.scss';
+    #APP_TITLE_noquotes {
+        @include overlay;
     }
 </style>
 
 {#if loading}
-    <div class="bg">
-        <div class="c">
-            <div class="c1 h" />
-            <div class="c2 h" />
-            <div class="c3 h" />
-            <div class="c4 h" />
-            <div class="c5 h" />
-            <div class="c6 h" />
-            <div class="c7 h" />
-            <div class="c8 h" />
-            <div class="c9 h" />
-            <div class="c10 h" />
-            <div class="c11 h" />
-            <div class="c12 h" />
-        </div>
-        {percent}%
-    </div>
+    <Preloader {percent} on:cancel={abort} color={Loader.color} unloadMessage="Закрытие страницы прервёт скачивание книги" />
+{:else if injectTarget}
+    <Window on:save={loadFB2} />
+    <ContextMenu>
+        <ContextMenuItem label={MENU_TITLE_FB2} on:trigger={loadFB2} />
+        <ContextMenuItem label={MENU_TITLE_EPUB} on:trigger={loadEPUB} />
+    </ContextMenu>
+    <button class={Loader.component} on:click={loadFB2} use:inject={injectTarget}>{MENU_TITLE_FB2}</button>
+    <button class={Loader.component} on:click={loadEPUB} use:inject={injectTarget}>{MENU_TITLE_EPUB}</button>
 {/if}
+<NotificationsDisplay />
