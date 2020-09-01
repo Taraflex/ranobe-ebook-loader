@@ -58,7 +58,7 @@ export async function loadDom(url: string, signal: AbortSignal) {
 }
 
 export function response2err(r: { status: number, statusText: string }) {
-    throw { name: r.statusText, message: r.status };
+    return { name: r.statusText, message: r.status };
 }
 
 export function http(baseurl: string) {
@@ -165,6 +165,8 @@ async function processBlob(url: string, blob: Blob): Promise<ImageInfo> {
     };
 }
 
+const corsRequest = typeof GM_xmlhttpRequest !== 'undefined' ? GM_xmlhttpRequest : GM.xmlHttpRequest;
+
 async function fetchImage(url: string, cache: ImageInfoMap, signal: AbortSignal): Promise<ImageInfo> {
     let breaker = new AbortController();
     const finallizer = () => {
@@ -173,7 +175,7 @@ async function fetchImage(url: string, cache: ImageInfoMap, signal: AbortSignal)
     };
     signal.addEventListener('abort', finallizer, { once: true });
     try {
-        if (typeof GM_xmlhttpRequest === 'undefined' || location.host === new URL(url).host) {
+        if (location.host === new URL(url).host || !corsRequest) {
             const response = await fetch(url, { credentials: 'include', cache: 'force-cache', referrer: location.href, signal: breaker.signal });
             if (cache.has(url)) return cache.get(url);
             if (response.status >= 400) {
@@ -189,7 +191,7 @@ async function fetchImage(url: string, cache: ImageInfoMap, signal: AbortSignal)
                 breaker.signal.removeEventListener('abort', abort);
                 abort();
             }
-            const { abort } = GM_xmlhttpRequest({
+            const { abort } = corsRequest({
                 url,
                 method: 'GET',
                 responseType: 'blob',
