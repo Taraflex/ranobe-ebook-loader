@@ -106,12 +106,13 @@ const reloadWrapper = '(' + ((props, port, path) => ({
         const reload = async function (o) {
             lastComp && (lastComp.$destroy /*|| lastComp.dispose || lastComp.destroy*/)();
             lastComp = await cb(o);
+            console.log(`[${new Date().toTimeString().split(' ')[0]}] ${path} reloaded`);
         }
         //@ts-ignore
-        const source = new EventSource(`http://localhost:${port}/${encodeURIComponent(path)}`);
+        const source = new unsafeWindow.EventSource(`http://localhost:${port}/${encodeURIComponent(path)}`);
         //@ts-ignore
         source.addEventListener('patch', e => this.patchedImport('data:application/javascript;charset=utf-8;base64,' + e.data).then(reload));
-        source.addEventListener('reload', () => location.reload());
+        source.addEventListener('reload', () => { source.close(); location.reload() });
     }
 })).toString() + ')';
 
@@ -120,7 +121,7 @@ function clientsStore(f, def) {
 }
 
 function send(reply, buf) {
-    reply.write(`retry: ${g('reconnect_timeout')}\nevent: patch\ndata: ${buf.toString('base64')}\nid:${Date.now()}\n\n`);
+    reply.write(`retry: ${g('reconnect_timeout')}\nevent: patch\ndata: ${buf.toString('base64')}\nid: ${Date.now()}\n\n`);
 }
 
 const stopServer = () => {
@@ -135,6 +136,9 @@ export default function (params) {
     let { meta, hot, port, reconnectTimeout } = params || {};
     port || (port = 9623);
     meta = fillPackageMeta(meta);
+    if (hot) {
+        (meta.grant || (meta.grant = [])).push('unsafeWindow')
+    }
 
     s('reconnect_timeout', reconnectTimeout || 2000);
     s('allowed_origins', new Set((meta.match || []).map(u => new URL(u).origin)));
@@ -177,34 +181,40 @@ export default function (params) {
                         if (hot) {
                             const server = createServer(async (request, reply) => {
                                 try {
+                                    console.log(request.headers);
                                     if (request.headers.origin && !g('allowed_origins').has(request.headers.origin)) {
                                         throw 'Invalid origin: ' + request.headers.origin;
                                     }
                                     const f = resolve(g('last_dir') + '/' + decodeURIComponent(request.url));
                                     const data = await fs.readFile(f);
-                                    reply.setHeader("Content-Type", "text/event-stream");
-                                    reply.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-                                    reply.setHeader("Connection", "keep-alive");
-                                    if (request.headers.origin) {
-                                        reply.setHeader("Access-Control-Allow-Origin", request.headers.origin);
-                                        reply.setHeader("Vary", "Origin");
-                                    }
+
+                                    reply.socket.setTimeout(0);
+                                    reply.socket.setNoDelay(true);
+                                    reply.socket.setKeepAlive(true);
+
+                                    reply.writeHead(200, '', Object.assign({
+                                        "Content-Type": "text/event-stream",
+                                        "Cache-Control": "no-cache, no-store, must-revalidate",
+                                        "Connection": "keep-alive",
+                                        "Vary": "Origin"
+                                    }, (request.headers.origin ? {
+                                        "Access-Control-Allow-Origin": request.headers.origin
+                                    } : {})));
+                                    reply.flushHeaders();
                                     const lastId = request.headers['last-event-id'];
                                     //todo check hash
                                     //if (lastId !== lastHash) {
                                     if (hot === 'patch' || !lastId) {
                                         send(reply, data);
                                     } else {
-                                        reply.write(`event: reload\nid:${Date.now()}\n\n`);
+                                        reply.write(`event: reload\nid: ${Date.now()}\n\n`);
+                                        console.log('after send reload');
                                     }
-                                    //}
-                                    reply.flushHeaders();
 
                                     clientsStore(f, []).push(reply);
                                 } catch (e) {
                                     this.warn(e);
-                                    reply.statusCode = 404;
-                                    reply.statusMessage = e && (e.message || e.name);
+                                    reply.writeHead(404, e && (e.message || e.name) || undefined);
                                     reply.end();
                                 }
                             });

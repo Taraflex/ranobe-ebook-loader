@@ -49,7 +49,7 @@ export class Ranobe extends Base {
         const { items } = await fetchJson(bookAlias + '/chapters', ctrl.signal);
 
         return pMap(
-            (items as { slug: string, isFull: 1 | 0, availabilityStatus: string }[]).filter(i => i.isFull || i.availabilityStatus === "free").reverse(),
+            (items as { slug: string, hasUserPaid: boolean, availabilityStatus: string }[]).filter(i => i.hasUserPaid || i.availabilityStatus === "free").reverse(),
             async ({ slug }, i) => {
                 try {
                     const { title, text: { text } } = await fetchJson(bookAlias + '/chapters/' + slug, ctrl.signal);
