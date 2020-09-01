@@ -31,3 +31,4 @@
 ![](https://raw.githubusercontent.com/Taraflex/ranobe-ebook-loader/master/screenshots/rulate.png)
 ![](https://raw.githubusercontent.com/Taraflex/ranobe-ebook-loader/master/screenshots/ranobe.png)
 ![](https://raw.githubusercontent.com/Taraflex/ranobe-ebook-loader/master/screenshots/ranobes.png)
+Так же epub можно скачать нажав <kbd>CTRL</kbd>+<kbd>S</kbd>

@@ -1,6 +1,6 @@
 {
   "name": "ranobe-ebook-loader",
-  "version": "0.2.1",
+  "version": "0.2.3",
   "description": "Юзерскрипт для скачивания книг (fb2, epub) c https://ранобэ.рф/ , https://ranobes.com/ и https://tl.rulate.ru/",
   "homepage": "https://github.com/Taraflex/ranobe-ebook-loader",
   "bugs": {

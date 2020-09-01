@@ -210,7 +210,7 @@
 {#if loading}
     <Preloader {percent} on:cancel={abort} color={Loader.color} />
 {:else if injectTarget}
-    <Window on:save={loadFB2} />
+    <Window on:save={loadEPUB} />
     <ContextMenu>
         <ContextMenuItem label={MENU_TITLE_FB2} on:trigger={loadFB2} />
         <ContextMenuItem label={MENU_TITLE_EPUB} on:trigger={loadEPUB} />
