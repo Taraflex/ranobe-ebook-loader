@@ -81,7 +81,7 @@ export default {
 					'https://tl.rulate.ru/book/*'
 				],
 				'run-at': 'document-idle',
-				grant: ['GM_registerMenuCommand', 'GM_unregisterMenuCommand', 'GM_xmlhttpRequest'],
+				grant: ['GM_registerMenuCommand', 'GM_unregisterMenuCommand', 'GM_xmlhttpRequest', 'GM.xmlHttpRequest'],
 				connect: '*',
 				noframes: ''
 			},
