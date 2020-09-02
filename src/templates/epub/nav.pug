@@ -10,5 +10,5 @@ html(xmlns='http://www.w3.org/1999/xhtml' xmlns:epub='http://www.idpf.org/2007/o
             nav#toc(epub:type='toc')                
                 ol
                     each chapter in chapters
-                        li(id=chapter.id)
-                            a(href=chapter.id+'.xhtml')= chapter.title
+                        li(id!=chapter.id)
+                            a(href!=chapter.id+'.xhtml')= chapter.title

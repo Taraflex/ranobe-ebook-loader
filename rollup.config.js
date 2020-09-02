@@ -64,11 +64,15 @@ export default {
 		dev ? 0 : terser({
 			ecma: 2018,
 			module: true,
+			compress: {
+				passes: 2,
+				unsafe_arrows: true
+			},
 			format: {
 				comments: /^\s+[=@][^t]/
 			}
 		}),
-		pug({ sourceMap: dev, pretty: true }),
+		pug({ sourceMap: dev, pretty: dev }),
 		userscript({
 			meta: {
 				downloadURL: 'https://raw.githubusercontent.com/Taraflex/ranobe-ebook-loader/master/build/ranobe-ebook-loader.user.js',

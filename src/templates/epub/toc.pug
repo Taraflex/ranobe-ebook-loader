@@ -1,8 +1,8 @@
 doctype xml
 ncx(version='2005-1' xmlns='http://www.daisy.org/z3986/2005/ncx/')
     head
-        meta(name="dtb:uid" content=uuid)
-        meta(name='dtb:generator' content=programName)
+        meta(name="dtb:uid" content!=uuid)
+        meta(name='dtb:generator' content!=programName)
         meta(name='dtb:depth' content='1')
         meta(name='dtb:totalPageCount' content='0')
         meta(name='dtb:maxPageNumber' content='0')
@@ -13,8 +13,8 @@ ncx(version='2005-1' xmlns='http://www.daisy.org/z3986/2005/ncx/')
             text= author.name
     navMap
         each chapter, index in chapters
-            navPoint.chapter(playOrder=(index+1) id=chapter.id)
+            navPoint.chapter(playOrder!=(index+1) id!=chapter.id)
                 navLabel
                     text= chapter.title
-                content(src=chapter.id + '.xhtml')
+                content(src!=chapter.id + '.xhtml')
     

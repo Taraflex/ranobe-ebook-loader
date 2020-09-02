@@ -10,7 +10,7 @@ description
                     home-page= author.homePage
         book-title= title
         if annotation
-            annotation !{annotation}
+            annotation!= annotation
         if keywords
             keywords= keywords
         if cover
@@ -26,8 +26,8 @@ description
                 last-name/
                 if author.homePage
                     home-page= author.homePage
-        program-used= programName
-        date(value=shortDate)= fullDate
+        program-used!= programName
+        date(value!=shortDate)!= fullDate
         src-url= homePage
         id= bookAlias
         version 1

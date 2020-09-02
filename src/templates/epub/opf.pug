@@ -8,7 +8,6 @@ package(version='3.0' unique-identifier='BookId' xmlns='http://www.idpf.org/2007
             dc:title#subtitle= subtitle
             meta(refines='#subtitle' property='title-type') subtitle
         dc:language ru
-        dc:date= isoDate
         dc:description= annotation
         each author, index in authors
             if index === 0
@@ -18,18 +17,19 @@ package(version='3.0' unique-identifier='BookId' xmlns='http://www.idpf.org/2007
                 dc:creator= author.name
         if cover
             meta(name='cover' content='CoverImage')
-        meta(property='dcterms:modified') !{isoDate}
+        dc:date!= isoDate
+        meta(property='dcterms:modified')!= isoDate
     manifest
         if cover
-            item#CoverImage(href='images/'+cover.id+cover.ext media-type=cover.mime properties='cover-image')
+            item#CoverImage(href!='images/'+cover.id+cover.ext media-type!=cover.mime properties='cover-image')
         each bin in images
             if cover != bin
-                item(id=bin.id media-type=bin.mime href='images/'+bin.id+bin.ext)
+                item(id!=bin.id media-type!=bin.mime href!='images/'+bin.id+bin.ext)
         item#ncx(href='toc.ncx' media-type='application/x-dtbncx+xml')
         item#nav(href='nav.xhtml' media-type='application/xhtml+xml' properties='nav')
         each chapter in chapters
-            item(id=chapter.id href=chapter.id+'.xhtml' media-type='application/xhtml+xml')
+            item(id!=chapter.id href!=chapter.id+'.xhtml' media-type='application/xhtml+xml')
     spine(toc='ncx')
         itemref(idref='nav')
         each chapter in chapters
-            itemref(idref=chapter.id)
+            itemref(idref!=chapter.id)
