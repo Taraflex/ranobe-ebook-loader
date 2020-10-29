@@ -1,7 +1,7 @@
 <script lang="ts">
     import { createEventDispatcher } from 'svelte';
+    import { progress } from './stores';
 
-    export let percent = 0;
     export let color: (a: number) => string = () => 'red';
 
     const emit = createEventDispatcher();
@@ -111,7 +111,7 @@
         <div class="u_c10" />
         <div class="u_c11" />
         <div class="u_c12" />
-        {@html percent + '%'}
+        {@html $progress + '%'}
     </div>
     <button class="u_cancel" on:click={cancel}>Cancel</button>
 </div>

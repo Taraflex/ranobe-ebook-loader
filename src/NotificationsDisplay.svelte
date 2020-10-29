@@ -1,6 +1,6 @@
-<script lang="ts">
+<script lang="ts" context="module">
     import { slide } from 'svelte/transition';
-    import { notifications } from './utils';
+    import { notifications } from './stores';
 
     function copy(s: string, e: MouseEvent) {
         navigator.clipboard
@@ -11,7 +11,7 @@
                 card.getBoundingClientRect(); // https://gist.github.com/paulirish/5d52fb081b3570c81e3a
                 card.style.animation = 'u_shake 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97)';
             })
-            .catch(e => notifications.add(e));
+            .catch(notifications.add);
     }
 </script>
 
@@ -114,6 +114,6 @@
         </div>
     {/each}
     {#if $notifications.size > 2}
-        <button class="u_bb" transition:slide|local on:click={() => notifications.clear()}>Close all</button>
+        <button class="u_bb" transition:slide|local on:click={notifications.clear}>Close all</button>
     {/if}
 </div>
