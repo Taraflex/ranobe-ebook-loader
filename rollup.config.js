@@ -31,18 +31,13 @@ export default {
 				},
 				scss: { sourceMap: false },
 				sass: { sourceMap: false },
+				//@ts-ignore
 				postcss: dev ? {
 					map: false,
-					plugins: [
-						require('autoprefixer')
-					]
+					plugins: [require('autoprefixer')]
 				} : {
 						map: false,
-						plugins: [
-							require('postcss-flexbugs-fixes'),
-							require('autoprefixer'),
-							require('cssnano')
-						]
+						plugins: [require('postcss-flexbugs-fixes'), require('autoprefixer'), require('cssnano')]
 					}
 			})
 		}),

@@ -1,4 +1,4 @@
-import { utf8encoder } from './utils';
+import { utf8encoder } from './string-utils';
 
 const crc32table = [];
 for (let n = 0; n < 256; n++) {

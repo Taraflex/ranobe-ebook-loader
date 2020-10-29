@@ -1,4 +1,4 @@
-<script lang="ts">
+<script lang="ts" context="module">
     import { createEventDispatcher } from 'svelte';
     import hotkeys from 'hotkeys-js';
 

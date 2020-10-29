@@ -1,8 +1,8 @@
 // browser version of https://www.npmjs.com/package/uuidv5
 
-import { utf8encoder } from './utils';
+import { utf8encoder } from './string-utils';
 
-const NAMESPACE_NULL = uuidFromString('00000000-0000-0000-0000-000000000000');
+const NAMESPACE_NULL = new Uint8Array(16);
 
 async function createUUIDv5Binary(name: Uint8Array, namespace: Uint8Array) {
     const c = new Uint8Array(namespace.byteLength + name.length);
@@ -26,37 +26,20 @@ async function createUUIDv5Binary(name: Uint8Array, namespace: Uint8Array) {
 
 function uuidToString(uuid: Uint8Array) {
     let raw = '';
-    for (let i = 0; i < 16; i++) {
-        raw += byteToHex(uuid[i]);
+    for (let i = 0; i < 16; ++i) {
+        raw += uuid[i].toString(16).padStart(2, '0');
     }
     return formatUUIDString(raw);
 }
 
-function byteToHex(n: number) {
-    const s = n.toString(16);
-    return s.length === 1 ? '0' + s : s;
-}
-
 function formatUUIDString(uuidStr: string) {
     return [
-        uuidStr.substr(0, 8),
-        uuidStr.substr(8, 4),
-        uuidStr.substr(12, 4),
-        uuidStr.substr(16, 4),
-        uuidStr.substr(20)
-    ].join('-').toLowerCase();
-}
-
-function uuidFromString(uuid: string) {
-    const raw = uuid.replace(/-/g, '');
-    if (raw.length !== 32) {
-        throw new Error('uuid string length must be 32 with -\'s removed');
-    }
-    const octets = [];
-    for (let i = 0; i < 16; i++) {
-        octets[i] = parseInt(raw.substr(i * 2, 2), 16);
-    }
-    return new Uint8Array(octets);
+        uuidStr.slice(0, 0 + 8),
+        uuidStr.slice(8, 8 + 4),
+        uuidStr.slice(12, 12 + 4),
+        uuidStr.slice(16, 16 + 4),
+        uuidStr.slice(20)
+    ].join('-');
 }
 
 let NAMESPACE_APP: Uint8Array = null;
