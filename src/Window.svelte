@@ -1,5 +1,4 @@
 <script lang="ts" context="module">
-    import { createEventDispatcher } from 'svelte';
     import hotkeys from 'hotkeys-js';
 
     function ctrlS(_: HTMLElement, cb: () => void) {
@@ -14,6 +13,10 @@
             },
         };
     }
+</script>
+
+<script lang="ts">
+    import { createEventDispatcher } from 'svelte';
 
     const emit = createEventDispatcher();
     function dispatchSave() {

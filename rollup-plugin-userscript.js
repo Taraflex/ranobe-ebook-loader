@@ -168,7 +168,8 @@ export default function (params) {
             },
             renderDynamicImport: function ({ moduleId, format }) {
                 return format === 'es' && this.getModuleInfo(moduleId).isEntry ? {
-                    left: reloadWrapper + '({\n' + [...meta.grant.filter(Boolean), 'CDATA', 'uneval', 'define', 'module', 'exports', 'context', 'unsafeWindow', 'cloneInto', 'exportFunction', 'createObjectIn', 'GM', 'GM_info'].map(p => `"${p}": typeof ${p} !== 'undefined' ? ${p} : undefined`).join(',\n') + `\n}, ${port}, `,
+                    //todo optimize
+                    left: reloadWrapper + '({\n' + [...meta.grant.filter(g => g && !g.includes('.')), 'CDATA', 'uneval', 'define', 'module', 'exports', 'context', 'unsafeWindow', 'cloneInto', 'exportFunction', 'createObjectIn', 'GM', 'GM_info'].map(p => `"${p}": typeof ${p} !== 'undefined' ? ${p} : undefined`).join(',\n') + `\n}, ${port}, `,
                     right: ')'
                 } : null
             },

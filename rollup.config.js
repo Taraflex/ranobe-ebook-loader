@@ -22,6 +22,7 @@ export default {
 	},
 	plugins: [
 		svelte({
+			emitCss: false,
 			preprocess: sveltePreprocess({
 				sourceMap: false,
 				typescript: {
@@ -41,7 +42,7 @@ export default {
 					}
 			})
 		}),
-		resolve({ dedupe: ['svelte'] }),
+		resolve({ dedupe: ['svelte'], browser: true }),
 		commonjs({ sourceMap: dev }),
 		typescript({
 			inlineSourceMap: dev,
