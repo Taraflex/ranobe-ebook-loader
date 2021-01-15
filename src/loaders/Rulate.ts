@@ -1,7 +1,10 @@
 import dayjs from 'dayjs';
 import pMap from 'p-map';
-import { sanitizeFilename, concurrency, ImageInfoMap, downloadImage, parse, http } from '../utils';
-import { Base } from './Base';
+
+import { progress } from '../stores';
+import { sanitizeFilename } from '../string-utils';
+import { downloadImage, http, ImageInfoMap, parse, getElements } from '../utils';
+import { concurrency, Base, Chapter } from './Base';
 
 const months = {
     'янв': 'jan',
@@ -35,7 +38,8 @@ export class Rulate extends Base {
         return document.querySelector('#Info > .btn-toolbar');
     }
 
-    async init(_: AbortController) {
+    async parts(ctrl: AbortController, cache: ImageInfoMap, mapper: (v: Chapter) => Promise<Chapter>) {
+
         const info = document.getElementById('Info');
         //icecream ebook reader не умеет не jpeg на обложку, поэтому отсортируем чтобы jpeg был первым
         this.covers = Array.from(info.querySelectorAll('.slick img') as NodeListOf<HTMLImageElement>, i => i.src);
@@ -49,38 +53,28 @@ export class Rulate extends Base {
         this.keywords = Array.from(document.querySelectorAll('.info a[href^="/search?tags"]'), a => a.textContent).join(', ');
         this.subtitle = this.extractTitle(document);
         this.title = this.subtitle.substring(this.subtitle.lastIndexOf(' / ') + 3);
-        let dtext = '';
-        let d = info.querySelector('.btn-toolbar + p');
-        while (d) {
-            dtext += d.outerHTML;
-            d = d.nextElementSibling;
-            if (d && d.tagName === 'H2') {
-                d = null;
-            }
-        }
-        this.description = dtext;
+        this.description = info.querySelector('.btn-toolbar + .clear + div').innerHTML;;
         //todo this.lang = undefined;
         this.authors = Array.from(document.getElementById('Info').querySelectorAll('a[href^="/search?from=book&t="]')).filter(e => e.parentElement.previousElementSibling.textContent === 'Автор:').map((a: HTMLAnchorElement) => ({ name: a.textContent, homePage: a.href }));
 
         this.bookAlias = sanitizeFilename(this.title);
-    }
 
-    async parts(ctrl: AbortController, cache: ImageInfoMap) {
+        progress.total = this.chapterElements.length;
         return pMap(
             this.chapterElements.map(a => a.href),
-            async (url, i) => {
+            async url => {
                 try {
-                    let { title, content } = await fetchJson(url.replace(/_new$/, '') + 'ajax?is_new=true', ctrl.signal);
-                    content = content.split(/<div class="content-text" style="word-wrap: break-word;">|<p>https?:\/\/tl\.rulate\.ru\/book\//, 3)[1]
-                    if (content.includes('<img ')) {
-                        const doc = parse(content);
-                        for (let img of Array.from(doc.getElementsByTagName('img'))) {
+                    let { title, content: text } = await fetchJson(url.replace(/_new$/, '') + 'ajax?is_new=true', ctrl.signal);
+                    text = text.split(/<div class="content-text" style="word-wrap: break-word;">|<p>https?:\/\/tl\.rulate\.ru\/book\//, 3)[1]
+                    if (text.includes('<img ')) {
+                        const doc = parse(text);
+                        for (const img of getElements(doc, 'img')) {
                             await downloadImage(title, img.src, cache, ctrl);
                         }
                         doc.open();
                     }
-                    this.progress(i, this.chapterElements.length);
-                    return { title, text: content };
+                    progress.inc();
+                    return mapper ? await mapper({ title, text }) : { title, text };
                 } catch (e) {
                     ctrl.abort();
                     throw e;

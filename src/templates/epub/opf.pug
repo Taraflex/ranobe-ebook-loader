@@ -7,8 +7,10 @@ package(version='3.0' unique-identifier='BookId' xmlns='http://www.idpf.org/2007
         if subtitle
             dc:title#subtitle= subtitle
             meta(refines='#subtitle' property='title-type') subtitle
+        //- //todo use lang
         dc:language ru
-        dc:description= annotation
+        if annotation
+            dc:description= annotation
         each author, index in authors
             if index === 0
                 dc:creator#author= author.name

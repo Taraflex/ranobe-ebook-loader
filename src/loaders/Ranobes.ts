@@ -1,7 +1,9 @@
 import dayjs from 'dayjs';
 import pMap from 'p-map';
-import { concurrency, loadDom, downloadImage, ImageInfoMap } from '../utils';
-import { Base } from './Base';
+
+import { progress } from '../stores';
+import { downloadImage, getElements, ImageInfoMap, loadDom } from '../utils';
+import { Base, Chapter, concurrency } from './Base';
 
 export class Ranobes extends Base {
 
@@ -12,8 +14,8 @@ export class Ranobes extends Base {
         return document.getElementById('mc-fs-rate');
     }
 
-    async init(_: AbortController) {
-        this.bookAlias = (document.querySelector('.r-fullstory-chapters-foot > a:nth-child(3n)') as HTMLAnchorElement).href.split('/', 5).slice(-1)[0];
+    async parts(ctrl: AbortController, cache: ImageInfoMap, mapper: (v: Chapter) => Promise<Chapter>) {
+        const bookAlias = this.bookAlias = (document.querySelector('.r-fullstory-chapters-foot > a:nth-child(3n)') as HTMLAnchorElement).href.split('/', 5).slice(-1)[0];
         this.covers = [(document.querySelector('[itemprop="image"]') as HTMLAnchorElement).href];
         this.d = dayjs(document.querySelector('[itemprop="datePublished"]').getAttribute('content'));
         this.genres = Array.from(document.querySelectorAll('[itemprop="genre"] a'), a => a.textContent);
@@ -23,10 +25,7 @@ export class Ranobes extends Base {
         this.description = document.querySelector('[itemprop="description"]').innerHTML;
         //todo this.lang = undefined;
         this.authors = Array.from(document.querySelectorAll('[itemprop="creator"] a'), (a: HTMLAnchorElement) => ({ name: a.textContent, homePage: a.href }));
-    }
 
-    async parts(ctrl: AbortController, cache: ImageInfoMap) {
-        const { bookAlias } = this;
         const items: string[] = [];
 
         for (let pageIndex = 1; ; ++pageIndex) {
@@ -35,16 +34,18 @@ export class Ranobes extends Base {
             doc.querySelectorAll(`.cat_block a[href^="https://ranobes.com/chapters/${bookAlias}/"]`).forEach((a: HTMLAnchorElement) => items.push(a.href));
         }
 
+        progress.total = items.length;
+
         return pMap(
             items.reverse(),
-            async (url, i) => {
+            async url => {
                 try {
                     let text = '';
                     let title = '';
 
                     const pages = [url];
 
-                    for (let page of pages) {
+                    for (const page of pages) {
                         const doc = await loadDom(page, ctrl.signal);
                         if (!doc) break;
                         const content = doc.getElementById('arrticle')
@@ -56,14 +57,14 @@ export class Ranobes extends Base {
                                 nav.querySelectorAll(`a[href^="https://ranobes.com/chapters/${bookAlias}/"]`).forEach((a: HTMLAnchorElement) => pages.push(a.href));
                             }
                         }
-                        for (let img of Array.from(content.getElementsByTagName('img'))) {
+                        for (const img of getElements(content, 'img')) {
                             await downloadImage(title, img.src, cache, ctrl);
                         }
                         doc.open();
                     }
 
-                    this.progress(i, items.length);
-                    return { title, text };
+                    progress.inc();
+                    return mapper ? await mapper({ title, text }) : { title, text };
                 } catch (e) {
                     ctrl.abort();
                     throw e;

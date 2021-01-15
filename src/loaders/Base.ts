@@ -1,6 +1,10 @@
 import type { Dayjs } from 'dayjs';
 import type { ImageInfoMap } from '../utils';
 
+export const concurrency = 5;
+
+export type Chapter = { id?: string, title: string, text: string };
+
 export abstract class Base {
     protected readonly programName = APP_TITLE + ' ' + APP_VERSION;
     protected d: Dayjs;
@@ -15,8 +19,6 @@ export abstract class Base {
     protected authors: { name: string, homePage?: string }[];
     public genres: string[];
 
-    constructor(protected readonly progress: (i: number, total: number) => void) { }
-
     date(f: string): string {
         return this.d.format(f);
     }
@@ -29,6 +31,5 @@ export abstract class Base {
         return doc.querySelector('h1').firstChild.textContent;
     }
 
-    abstract async init(ctrl: AbortController): Promise<void>;
-    abstract async parts(ctrl: AbortController, cache: ImageInfoMap): Promise<any[]>;
+    abstract parts(ctrl: AbortController, cache: ImageInfoMap, mapper: (v: Chapter) => Promise<Chapter>): Promise<Chapter[]>;
 }

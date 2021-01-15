@@ -1,25 +1,59 @@
 import pMap from 'p-map';
-import { writable } from 'svelte/store';
 
-import { defer } from './defer';
+import { notifications } from './stores';
+import { lastMatch, sha256, stringify, unescapeUnsafe } from './string-utils';
 
-export const concurrency = 5;
-
-const { subscribe, update } = writable(new Set<string>());
-export const notifications = {
-    subscribe,
-    remove: (s: string) => update(n => (n.delete(s), n)),
-    add: (s: any) => update(n => n.add(stringify(s))),
-    clear: () => update(n => (n.clear(), n))
+class SPromise<T> extends Promise<T>{
+    notPending?: boolean;
 }
+
+export function getElements<K extends keyof HTMLElementTagNameMap>(root: HTMLElement | Document, qualifiedName: K): Iterable<HTMLElementTagNameMap[K]> {
+    const e = root.getElementsByTagName(qualifiedName);
+    return e[Symbol.iterator] ? e as any : Array.from(e);
+}
+
+export function mapper(concurrency = 5) {
+    const wrap = async <T>(v: T) => v;
+    return async function* parallelMap<T = any, R = any>(iter: AsyncIterable<T> | AsyncGenerator<T> | Generator<T> | Iterable<T>, f: (v: T) => R | PromiseLike<R>) {
+        const t: SPromise<R>[] = [];
+        for await (const item of iter) {
+            while (t.length && t[0].notPending) {
+                yield await t.shift();
+            }
+            const sp = new SPromise<R>((resolve, reject) => wrap(f(item)).then(v => {
+                sp.notPending = true;
+                return resolve(v);
+            }, v => {
+                sp.notPending = true;
+                return reject(v);
+            }));
+            t.push(sp);
+            const processed = t.filter(t => !t.notPending);
+            if (processed.length >= concurrency) {
+                await Promise.race(processed);
+            }
+            while (t.length && t[0].notPending) {
+                yield await t.shift();
+            }
+        }
+        for (const item of t) {
+            yield await item;
+        }
+    }
+}
+
+//console.log(mapper(5)([1, 2, 3, 4, 5, 6], (v) => v + 1))
+//type u = AsyncGenerator
 
 export function patchApi(type: string) {
     const orig = history[type];
     return Object.assign(
         function () {
-            const rv = orig.apply(this, arguments);
-            window.dispatchEvent(new Event(type));
-            return rv;
+            try {
+                return orig.apply(this, arguments);
+            } finally {
+                window.dispatchEvent(new Event(type));
+            }
         },
         {
             destroy() {
@@ -27,29 +61,6 @@ export function patchApi(type: string) {
             },
         }
     );
-}
-
-const map = {
-    //'&amp;': '&',
-    '&#x22;': '"',
-    '&#34;': '"',
-    '&#034;': '"',
-    '&quot;': '"',
-    '&#x27;': "'",
-    '&#39;': "'",
-    '&#039;': "'",
-    '&apos;': "'",
-    // ['#x2F', '/'],
-    // ['#47', '/'],
-    '&#x60;': '`',
-    '&nbsp;': ' ',
-    '&#95;': '_'
-} as const;
-
-const replaceRegexp = RegExp('(?:' + Object.keys(map).join('|') + ')', 'g');
-
-function unescape(s: string) {
-    return s.replace(replaceRegexp, (m: keyof typeof map) => map[m]);
 }
 
 export async function loadDom(url: string, signal: AbortSignal) {
@@ -71,12 +82,6 @@ export function http(baseurl: string) {
     }
 }
 
-function lastMatch(s: string, re: RegExp) {
-    const m = s && s.match(re);
-    return m && m.length > 0 ? m[m.length - 1] : null;
-}
-
-const B64_RE = /^\s*data:([image\/jpnfwbpsv]+);base64/;
 
 export interface ImageInfo {
     readonly id: string;
@@ -103,8 +108,10 @@ const exts = {
 } as const;
 
 function fixMime(m: string) {
-    return m in exts ? m : 'image/jpeg';
+    return exts[m] ? m : 'image/jpeg';
 }
+
+const B64_RE = /^\s*data:([image\/jpnfwbpsv]+);base64/;
 
 async function processB64Url(url: string): Promise<ImageInfo> {
     const mime = fixMime(lastMatch(url, B64_RE));
@@ -184,43 +191,44 @@ async function fetchImage(url: string, cache: ImageInfoMap, signal: AbortSignal)
             if (cache.has(response.url)) return cache.get(response.url);
             return await processBlob(response.url, await response.blob());
         } else {
-            const def = defer<Tampermonkey.Response<any>>();
+            const { finalUrl, response } = await new Promise<Tampermonkey.Response<any>>((resolve, reject) => {
 
-            function _abort(reason: any) {
-                def.reject(reason);
-                breaker.signal.removeEventListener('abort', abort);
-                abort();
-            }
-            const { abort } = corsRequest({
-                url,
-                method: 'GET',
-                responseType: 'blob',
-                headers: {
-                    'Referer': location.href
-                },
-                onprogress(r) {
-                    if (cache.has(url)) return _abort({ name: 'Exist', url });
-                    if (cache.has(r.finalUrl)) return _abort({ name: 'Exist', url: r.finalUrl });
-                },
-                onabort() {
-                    _abort({ name: 'AbortError' });
-                },
-                onerror(r) {
-                    _abort(r.error);
-                },
-                onload(r) {
-                    if (r.status >= 400) {
-                        _abort(response2err(r))
-                    } else {
-                        def.resolve(r);
-                        breaker.signal.removeEventListener('abort', abort);
-                    }
+                function _abort(reason: any) {
+                    reject(reason);
+                    breaker.signal.removeEventListener('abort', abort);
+                    abort();
                 }
+
+                const { abort } = corsRequest({
+                    url,
+                    method: 'GET',
+                    responseType: 'blob',
+                    headers: {
+                        'Referer': location.href
+                    },
+                    onprogress(r) {
+                        if (cache.has(url)) return _abort({ name: 'Exist', url });
+                        if (cache.has(r.finalUrl)) return _abort({ name: 'Exist', url: r.finalUrl });
+                    },
+                    onabort() {
+                        _abort({ name: 'AbortError' });
+                    },
+                    onerror(r) {
+                        _abort(r.error);
+                    },
+                    onload(r) {
+                        if (r.status >= 400) {
+                            _abort(response2err(r))
+                        } else {
+                            breaker.signal.removeEventListener('abort', abort);
+                            resolve(r);
+                        }
+                    }
+                });
+
+                breaker.signal.addEventListener('abort', abort, { once: true });
             });
 
-            breaker.signal.addEventListener('abort', abort, { once: true });
-
-            const { finalUrl, response } = await def.promise;
             return await processBlob(finalUrl, response);
         }
     } catch (e) {
@@ -239,9 +247,10 @@ export async function downloadImage(title: string, url: string, cache: ImageInfo
 
         title = (title || '').trim();
 
-        const i = await (B64_RE.test(url) ? processB64Url(url) : fetchImage(url, cache, ctrl.signal));
+        let i = await (B64_RE.test(url) ? processB64Url(url) : fetchImage(url, cache, ctrl.signal));
 
         if (i) {
+            i = cache.get(i.id) || i;
             cache.set(url, i);
             cache.set(i.id, i);
             cache.set(i.url, i);
@@ -283,7 +292,10 @@ function unwrap(e: Element) {
 }
 
 function replaceTags(doc: Document, target: string, ...sources: string[]) {
-    doc.querySelectorAll(sources.filter(s => s != target).join(',')).forEach(e => replaceTag(doc, e, target));
+    const selector = sources.filter(s => s != target).join(',');
+    if (selector) {
+        doc.querySelectorAll(selector).forEach(e => replaceTag(doc, e, target));
+    }
 }
 
 export const formats = {
@@ -307,7 +319,11 @@ export const formats = {
 
 export type EbookFormat = typeof formats.FB2 | typeof formats.EPUB;
 
-export async function processHtml(raw: string, ctrl: AbortController, tags: EbookFormat, images?: ImageInfoMap): Promise<string> {
+function fixAttr(s: string) {
+    return s ? s.replace(/"/g, "'") : null;
+}
+
+export async function processHtml(raw: string, ctrl: AbortController, tags: EbookFormat, concurrency: number, images?: ImageInfoMap): Promise<string> {
     raw = raw.replace(/(\s*<br(\s+[^\/<>]+)?\/?>\s*)+/g, '</p><p>');
     let doc = parse(raw);
     try {
@@ -341,21 +357,29 @@ export async function processHtml(raw: string, ctrl: AbortController, tags: Eboo
                 async e => {
                     let i = await downloadImage(e.closest('section').querySelector('header').textContent, e.src, images, ctrl)
                     if (i) {
-                        const { alt } = e;
+                        const alt = fixAttr(e.alt);
+                        const title = fixAttr(e.title);
+                        const image = doc.createElement(tags.image);
+                        if (alt) {
+                            image.setAttribute('alt', alt)
+                        }
                         if (tags === formats.FB2) {
                             await i.b64();
-                            const image = doc.createElement(tags.image);
                             image.setAttribute('l:href', '#' + i.id);
-                            if (alt) {
-                                image.setAttribute('alt', alt)
-                            }
                             e.parentNode.replaceChild(image, e);
-                        } else if (tags === formats.EPUB) {
-                            dropAttrs(e);
-                            e.setAttribute('src', 'images/' + i.id + i.ext);
-                            if (alt) {
-                                e.setAttribute('alt', alt)
+                            if (image.parentElement.tagName === 'SECTION') {
+                                if (title) {
+                                    image.title = title;
+                                }
+                                image.id = i.id;
                             }
+                        } else if (tags === formats.EPUB) {
+                            image['src'] = 'images/' + i.id + i.ext;
+                            if (title) {
+                                image.title = title;
+                            }
+                            image.id = i.id;
+                            e.parentNode.replaceChild(image, e);
                         }
                     } else {
                         e.remove();
@@ -366,21 +390,18 @@ export async function processHtml(raw: string, ctrl: AbortController, tags: Eboo
         }
 
         doc.querySelectorAll(`body :not(${tags.image})`).forEach(dropAttrs);
+        replaceTags(doc, tags.blockquote, blockquote);
 
-        if (tags.blockquote != blockquote) {
-            doc.querySelectorAll(blockquote).forEach(e => replaceTag(doc, e, tags.blockquote));
-        }
-
-        raw = unescape(doc.body.innerHTML).replace(/(\s*<p>\s*<\/p>\s*)+/g, ' ');
-
-        if (!images) {
-            return raw;
-        }
+        raw = doc.body.innerHTML;
+        doc.open();
+        raw = unescapeUnsafe(doc, raw);
+        raw = raw.replace(/(\s*<p>\s*<\/p>\s*)+/g, ' ');
 
         if (tags === formats.FB2) {
-            return raw.replace(/><\/image>/g, '/>');
+            raw = raw.replace(/<(\/)?header>/g, '<$1title>');
+            return images ? raw.replace(/><\/image>/g, '/>') : raw;
         } else if (tags === formats.EPUB) {
-            return raw.replace(/(<img[^>]+)>/gi, '$1/>');
+            return images ? raw.replace(/(<img[^>]+)>/gi, '$1/>') : raw;
         }
     } finally {
         doc.open();
@@ -408,37 +429,10 @@ export function inject(node: HTMLElement, parent: HTMLElement) {
     }
 }
 
-export function stringify(o: any): string {
-    if (!o || o === !!o || o === +o) return String(o);
-    if (o.constructor === String) return o as string;
-    if (o.hasOwnProperty('toString') || typeof o === 'symbol') return o.toString();
-    if (o.hasOwnProperty('toJSON')) return JSON.stringify(o, null, '  ');
-    const info = o.message ? stringify(o.message) : JSON.stringify(o, null, '  ');
-    const name = o.name || o.constructor.name;
-    return name && name != 'Object' && name != 'Error' ? name + ': ' + info : info;
-}
-
-// https://github.com/parshap/node-sanitize-filename/blob/master/index.js
-
-const illegalRe = /[\/\?<>\\:\*\|"]/g;
-const controlRe = /[\x00-\x1f\x80-\x9f]/g;
-const reservedRe = /^\.+$/;
-const windowsReservedRe = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])(\..*)?$/i;
-const windowsTrailingRe = /[\. ]+$/;
-const replacement = '-';
-
-export function sanitizeFilename(input: string) {
-    return input
-        .replace(illegalRe, replacement)
-        .replace(controlRe, replacement)
-        .replace(reservedRe, replacement)
-        .replace(windowsReservedRe, replacement)
-        .replace(windowsTrailingRe, replacement);
-}
-
-export const utf8encoder = new TextEncoder();
-
-export async function sha256(s: string | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | Float32Array | Float64Array | DataView | ArrayBuffer) {
-    const b = new Uint8Array(await crypto.subtle.digest('SHA-256', s.constructor === String ? utf8encoder.encode(s) : s as Exclude<typeof s, string>));
-    return '_' + btoa(String.fromCharCode.apply(null, b as any)).replace(/\//g, '_').replace(/\+/g, '-').replace(/=+$/, '');
+export function* uniqValues(map: ImageInfoMap) {
+    for (const [k, v] of map) {
+        if (k === v.id) {
+            yield v;
+        }
+    }
 }
