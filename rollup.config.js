@@ -83,7 +83,7 @@ export default {
 					'https://xn--80ac9aeh6f.xn--p1ai/*',
 					'https://ranobes.com/ranobe/*',
 					'https://tl.rulate.ru/book/*',
-					'https://jaomix.ru/category/*'
+					'https://jaomix.ru/*'
 				],
 				'run-at': 'document-idle',
 				grant: ['GM_registerMenuCommand', 'GM_unregisterMenuCommand', 'GM_xmlhttpRequest', 'GM.xmlHttpRequest'],
