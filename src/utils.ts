@@ -64,8 +64,17 @@ export function patchApi(type: string) {
     );
 }
 
-export async function loadDom(url: string, signal: AbortSignal) {
-    const resp = await fetch(url, { credentials: 'include', signal });
+export async function loadDom(url: string, signal: AbortSignal, method = 'GET', body?: any) {
+    const resp = await fetch(url, {
+        method,
+        credentials: 'include',
+        signal,
+        headers: {
+            'x-requested-with': 'XMLHttpRequest',
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body
+    });
     return resp.status === 200 ? parse(await resp.text()) : null;
 }
 
@@ -330,7 +339,7 @@ export async function processHtml(raw: string, ctrl: AbortController, tags: Eboo
     try {
         const { blockquote } = formats.EPUB;
 
-        doc.querySelectorAll('.message-delete,.splitnewsnavigation,script' + (images ? '' : ',img')).forEach(e => e.remove());
+        doc.querySelectorAll('.message-delete,.splitnewsnavigation,script,.adblock-service' + (images ? '' : ',img')).forEach(e => e.remove());
         replaceTags(doc, tags.emphasis, 'i', 'em', 'dfn', 'var', 'q', 'dd', 'address');
         replaceTags(doc, tags.strong, 'b', 'strong', 'mark');
         replaceTags(doc, tags.strikethrough, 's', 'strike', 'del');

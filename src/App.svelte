@@ -5,6 +5,7 @@
     import { Ranobe } from './loaders/Ranobe';
     import { Ranobes } from './loaders/Ranobes';
     import { Rulate } from './loaders/Rulate';
+    import { Jaomix } from './loaders/Jaomix';
 
     import fb2Description from './templates/fb2/description.pug';
     import fb2Content from './templates/fb2/content.pug';
@@ -40,6 +41,7 @@
         'xn--80ac9aeh6f.xn--p1ai': Ranobe,
         'ranobes.com': Ranobes,
         'tl.rulate.ru': Rulate,
+        'jaomix.ru': Jaomix,
     }[location.hostname];
 
     let loading = false;

@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         ranobe-ebook-loader
 // @namespace    mailto:taraflex.red@gmail.com
-// @version      0.2.4
+// @version      0.2.5
 // @author       Taraflex <taraflex.red@gmail.com>
-// @description  Юзерскрипт для скачивания книг (fb2, epub) c https://ранобэ.рф/ , https://ranobes.com/ и https://tl.rulate.ru/
+// @description  Юзерскрипт для скачивания книг (fb2, epub) c https://ранобэ.рф/ , https://ranobes.com/ , https://tl.rulate.ru/ , https://jaomix.ru/
 // @license      MIT
 // @homepageURL  https://github.com/Taraflex/ranobe-ebook-loader
 // @icon         https://raw.githubusercontent.com/Taraflex/ranobe-ebook-loader/master/icons/32.png
@@ -15,6 +15,7 @@
 // @match        https://xn--80ac9aeh6f.xn--p1ai/*
 // @match        https://ranobes.com/ranobe/*
 // @match        https://tl.rulate.ru/book/*
+// @match        https://jaomix.ru/*
 // @connect      *
 // @run-at       document-idle
 // @grant        GM_registerMenuCommand

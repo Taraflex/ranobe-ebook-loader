@@ -1,5 +1,5 @@
 # ranobe-ebook-loader
-Юзерскрипт для скачивания книг (fb2, epub) c https://ранобэ.рф/ , https://ranobes.com/ и https://tl.rulate.ru/
+Юзерскрипт для скачивания книг (fb2, epub) c https://ранобэ.рф/ , https://ranobes.com/ , https://tl.rulate.ru/ , https://jaomix.ru/
 
 ![icon from https://icon-icons.com/icon/book-shelf-book/54414](https://raw.githubusercontent.com/Taraflex/ranobe-ebook-loader/master/icons/128.png)
 

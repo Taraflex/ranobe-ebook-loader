@@ -2,7 +2,7 @@ import dayjs from 'dayjs';
 import pMap from 'p-map';
 
 import { progress } from '../stores';
-import { downloadImage, http, ImageInfoMap, parse } from '../utils';
+import { downloadImage, getElements, http, ImageInfoMap, parse } from '../utils';
 import { concurrency, Base, Chapter } from './Base';
 
 const fetchJson = http('https://xn--80ac9aeh6f.xn--p1ai/api/v2/books/');
@@ -43,7 +43,7 @@ export class Ranobe extends Base {
                     const { title, text: { text } } = await fetchJson(bookAlias + '/chapters/' + slug, ctrl.signal);
                     if (text.includes('<img ')) {
                         const doc = parse(text);
-                        for (const img of Array.from(doc.getElementsByTagName('img'))) {
+                        for (const img of getElements(doc, 'img')) {
                             await downloadImage(title, img.src, cache, ctrl);
                         }
                         doc.open();
