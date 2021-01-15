@@ -27,7 +27,9 @@ export default {
 				sourceMap: false,
 				typescript: {
 					compilerOptions: {
-						sourceMap: false
+						sourceMap: false,
+						noUnusedLocals: !dev,
+						noUnusedParameters: !dev,
 					}
 				},
 				scss: { sourceMap: false },
@@ -45,6 +47,8 @@ export default {
 		resolve({ dedupe: ['svelte'], browser: true }),
 		commonjs({ sourceMap: dev }),
 		typescript({
+			noUnusedLocals: !dev,
+			noUnusedParameters: !dev,
 			inlineSourceMap: dev,
 			inlineSources: dev,
 		}),
@@ -78,7 +82,8 @@ export default {
 					'https://ранобэ.рф/*',
 					'https://xn--80ac9aeh6f.xn--p1ai/*',
 					'https://ranobes.com/ranobe/*',
-					'https://tl.rulate.ru/book/*'
+					'https://tl.rulate.ru/book/*',
+					'https://jaomix.ru/category/*'
 				],
 				'run-at': 'document-idle',
 				grant: ['GM_registerMenuCommand', 'GM_unregisterMenuCommand', 'GM_xmlhttpRequest', 'GM.xmlHttpRequest'],

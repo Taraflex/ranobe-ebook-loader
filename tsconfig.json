@@ -15,8 +15,6 @@
         "strictBindCallApply": true,
         "module": "esnext",
         "baseUrl": ".",
-        "noUnusedLocals": true,
-        "noUnusedParameters": true,
         "target": "es2018",
         "allowSyntheticDefaultImports": true,
         "noEmitOnError": true,
