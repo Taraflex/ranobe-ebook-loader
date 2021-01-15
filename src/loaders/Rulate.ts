@@ -1,29 +1,9 @@
-import dayjs from 'dayjs';
 import pMap from 'p-map';
 
 import { progress } from '../stores';
 import { sanitizeFilename } from '../string-utils';
-import { downloadImage, http, ImageInfoMap, parse, getElements } from '../utils';
-import { concurrency, Base, Chapter } from './Base';
-
-const months = {
-    'янв': 'jan',
-    'фев': 'feb',
-    'мар': 'mar',
-    'апр': 'apr',
-    'мая': 'may',
-    'июн': 'jun',
-    'июл': 'jul',
-    'авг': 'aug',
-    'сен': 'sep',
-    'окт': 'oct',
-    'ноя': 'nov',
-    'дек': 'dec'
-}
-
-function parseDate(s: string) {
-    return dayjs(s.replace(/(янв|фев|мар|апр|мая|июн|июл|авг|сен|окт|ноя|дек)[а-я]*/i, (_, m) => months[m]).replace(/[^\w:\+\s]+/g, '').replace(/\s+/g, ' '));
-}
+import { downloadImage, getElements, http, ImageInfoMap, parse, parseRuDate } from '../utils';
+import { Base, Chapter, concurrency } from './Base';
 
 const fetchJson = http('');
 
@@ -48,7 +28,7 @@ export class Rulate extends Base {
             this.covers.unshift(j);
         }
         this.covers = Array.from(new Set(this.covers));
-        this.d = parseDate(this.chapterElements[this.chapterElements.length - 1].parentElement.previousElementSibling.previousElementSibling.firstElementChild.getAttribute('title'));
+        this.d = parseRuDate(this.chapterElements[this.chapterElements.length - 1].parentElement.previousElementSibling.previousElementSibling.firstElementChild.getAttribute('title'));
         this.genres = Array.from(document.querySelectorAll('.info a[href^="/search?genres"]'), a => a.textContent);
         this.keywords = Array.from(document.querySelectorAll('.info a[href^="/search?tags"]'), a => a.textContent).join(', ');
         this.subtitle = this.extractTitle(document);

@@ -1,3 +1,4 @@
+import dayjs from 'dayjs';
 import pMap from 'p-map';
 
 import { notifications } from './stores';
@@ -435,4 +436,23 @@ export function* uniqValues(map: ImageInfoMap) {
             yield v;
         }
     }
+}
+
+const trMonths = {
+    'янв': 'jan',
+    'фев': 'feb',
+    'мар': 'mar',
+    'апр': 'apr',
+    'мая': 'may',
+    'июн': 'jun',
+    'июл': 'jul',
+    'авг': 'aug',
+    'сен': 'sep',
+    'окт': 'oct',
+    'ноя': 'nov',
+    'дек': 'dec'
+}
+
+export function parseRuDate(s: string) {
+    return dayjs(s.replace(/(янв|фев|мар|апр|мая|июн|июл|авг|сен|окт|ноя|дек)[а-я]*/i, (_, m) => trMonths[m]).replace(/[^\w:\+\s]+/g, '').replace(/\s+/g, ' '));
 }
