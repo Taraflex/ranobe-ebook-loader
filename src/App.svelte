@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { ImageInfoMap, EbookFormat } from './utils';
+    import type { ImageInfoMap, EbookFormat, ImageInfo } from './utils';
     import type { Base, Chapter } from './loaders/Base';
 
     import { Ranobe } from './loaders/Ranobe';
@@ -154,7 +154,7 @@
                                     { path: 'OEBPS/toc.ncx', data: epubToc(renderInfo) },
                                     { path: 'OEBPS/nav.xhtml', data: epubNav(renderInfo) },
                                     { path: 'OEBPS/content.opf', data: epubOpf(renderInfo) },
-                                    ...images.map(a => ({ path: 'OEBPS/images/' + a.id + a.ext, data: a.data() })),
+                                    ...images.map((a: ImageInfo) => ({ path: 'OEBPS/images/' + a.id + a.ext, data: a.data() })),
                                     ...chapters.map(a => ({ path: `OEBPS/${a.id}.xhtml`, data: a.text })),
                                 ])
                             ),
@@ -182,9 +182,7 @@
                         '</body>',
                     ];
                     for (const img of uniqValues(attaches)) {
-                        if (img.cachedB64) {
-                            blobParts.push(`<binary id="${cover && cover.id == img.id ? 'cover' : img.id}" content-type="${img.mime}">`, img.cachedB64, '</binary>');
-                        }
+                        blobParts.push(`<binary id="${cover && cover.id == img.id ? 'cover' : img.id}" content-type="${img.mime}">`, await img.b64(), '</binary>');
                     }
                     attaches.clear();
                     blobParts.push('</FictionBook>');
