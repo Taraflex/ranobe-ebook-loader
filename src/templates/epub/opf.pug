@@ -1,7 +1,7 @@
 doctype xml
 package(version='3.0' unique-identifier='BookId' xmlns='http://www.idpf.org/2007/opf')
     metadata(xmlns:dc='http://purl.org/dc/elements/1.1/')
-        dc:identifier#BookId= uuid
+        dc:identifier#BookId!= uuid
         dc:title#main= title
         meta(refines='#main' property='title-type') main
         if subtitle
