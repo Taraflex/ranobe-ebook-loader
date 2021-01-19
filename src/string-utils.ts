@@ -33,11 +33,6 @@ export function unescapeUnsafe(doc: HTMLDocument, s: string) {
     });
 }
 
-export function lastMatch(s: string, re: RegExp) {
-    const m = s && s.match(re);
-    return m && m.length > 0 ? m[m.length - 1] : null;
-}
-
 export function stringify(o: any): string {
     if (!o || o === !!o || o === +o) return String(o);
     if (o.constructor === String) return o as string;

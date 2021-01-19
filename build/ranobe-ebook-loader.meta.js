@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ranobe-ebook-loader
 // @namespace    mailto:taraflex.red@gmail.com
-// @version      0.2.5
+// @version      0.2.6
 // @author       Taraflex <taraflex.red@gmail.com>
 // @description  Юзерскрипт для скачивания книг (fb2, epub) c https://ранобэ.рф/ , https://ranobes.com/ , https://tl.rulate.ru/ , https://jaomix.ru/
 // @license      MIT

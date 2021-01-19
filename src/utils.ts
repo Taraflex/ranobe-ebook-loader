@@ -1,16 +1,13 @@
 import dayjs from 'dayjs';
 import pMap from 'p-map';
 
+import { decodeBase64, detectMime } from './mime';
 import { notifications } from './stores';
-import { lastMatch, sha256, stringify, unescapeUnsafe } from './string-utils';
+import { sha256, stringify, unescapeUnsafe } from './string-utils';
 
+/*
 class SPromise<T> extends Promise<T>{
     notPending?: boolean;
-}
-
-export function getElements<K extends keyof HTMLElementTagNameMap>(root: HTMLElement | Document, qualifiedName: K): Iterable<HTMLElementTagNameMap[K]> {
-    const e = root.getElementsByTagName(qualifiedName);
-    return e[Symbol.iterator] ? e as any : Array.from(e);
 }
 
 export function mapper(concurrency = 5) {
@@ -42,9 +39,12 @@ export function mapper(concurrency = 5) {
         }
     }
 }
+*/
 
-//console.log(mapper(5)([1, 2, 3, 4, 5, 6], (v) => v + 1))
-//type u = AsyncGenerator
+export function getElements<K extends keyof HTMLElementTagNameMap>(root: HTMLElement | Document, qualifiedName: K): Iterable<HTMLElementTagNameMap[K]> {
+    const e = root.getElementsByTagName(qualifiedName);
+    return e[Symbol.iterator] ? e as any : Array.from(e);
+}
 
 export function patchApi(type: string) {
     const orig = history[type];
@@ -69,11 +69,11 @@ export async function loadDom(url: string, signal: AbortSignal, method = 'GET', 
         method,
         credentials: 'include',
         signal,
+        body,
         headers: {
             'x-requested-with': 'XMLHttpRequest',
             'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body
+        }
     });
     return resp.status === 200 ? parse(await resp.text()) : null;
 }
@@ -92,92 +92,50 @@ export function http(baseurl: string) {
     }
 }
 
-
 export interface ImageInfo {
     readonly id: string;
     readonly url: string;
     readonly mime: string;
     readonly ext: string;
-    readonly cachedB64: string;
     b64(): string | Promise<string>;
     data(): Uint8Array;
 };
 export type ImageInfoMap = Map<string, ImageInfo>;
 
-const exts = {
-    'image/gif': '.gif',
-    'image/jpeg': '.jpg',
-    'image/png': '.png',
-    'image/x-ms-bmp': '.bmp',
-    'image/bmp': '.bmp',
-    'image/svg+xml': '.svg',
-    'image/svg': '.svg',
-    'image/webp': '.webp',
-    'image/x-xbitmap': '.xbm',
-    'image/x-xbm': '.xbm'
-} as const;
-
-function fixMime(m: string) {
-    return exts[m] ? m : 'image/jpeg';
-}
-
-const B64_RE = /^\s*data:([image\/jpnfwbpsv]+);base64/;
-
 async function processB64Url(url: string): Promise<ImageInfo> {
-    const mime = fixMime(lastMatch(url, B64_RE));
-    const id = await sha256(url);
     const _64 = url.slice(url.indexOf(',') + 1);
     return {
-        ext: exts[mime],
+        ...detectMime(_64),
         url,
-        id,
-        mime,
-        get cachedB64() {
-            return _64;
-        },
+        id: await sha256(url),
         b64: () => _64,
-        data() {
-            const binary_string = atob(_64);
-            const len = binary_string.length;
-            const bytes = new Uint8Array(len);
-            for (let i = 0; i < len; ++i) {
-                bytes[i] = binary_string.charCodeAt(i);
-            }
-            return bytes;
-        }
+        data: () => decodeBase64(_64)
     };
 }
 
 async function processBlob(url: string, blob: Blob): Promise<ImageInfo> {
-    const mime = fixMime(blob.type);
     const buf = new Uint8Array(await blob.arrayBuffer());
-    let _64: string;
+    let _64: Promise<string>;
     return {
+        ...detectMime(buf),
         url,
-        ext: exts[mime],
         id: await sha256(buf),
-        mime,
-        get cachedB64() {
-            return _64;
-        },
-        b64() {
-            return _64 || new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onloadend = async function () {
-                    try {
-                        if (reader.readyState == /*FileReader.DONE*/ 2) {
-                            const dataUrl = reader.result as string;
-                            resolve(_64 = dataUrl.slice(dataUrl.indexOf(',') + 1));
-                        } else {
-                            reject(reader.error);
-                        }
-                    } catch (e) {
-                        reject(e);
+        b64: () => _64 ||= new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = function () {
+                try {
+                    if (reader.readyState == /*FileReader.DONE*/ 2) {
+                        const dataUrl = reader.result as string;
+                        resolve(dataUrl.slice(dataUrl.indexOf(',') + 1));
+                    } else {
+                        reject(reader.error);
                     }
-                };
-                reader.readAsDataURL(blob);
-            });
-        },
+                } catch (e) {
+                    reject(e);
+                }
+            };
+            reader.readAsDataURL(blob);
+        }),
         data: () => buf
     };
 }
@@ -251,6 +209,8 @@ async function fetchImage(url: string, cache: ImageInfoMap, signal: AbortSignal)
     }
 }
 
+const B64_RE = /^\s*data:([image\/jpnfwbpsv]+);base64/;
+
 export async function downloadImage(title: string, url: string, cache: ImageInfoMap, ctrl: AbortController) {
     try {
         if (cache.has(url)) return cache.get(url);
@@ -291,7 +251,6 @@ export function replaceTag(doc: Document, elem: Element, tag: string) {
         t.appendChild(elem.firstChild);
     }
     elem.parentNode.replaceChild(t, elem);
-    return t;
 }
 
 function unwrap(e: Element) {
@@ -341,10 +300,12 @@ export async function processHtml(raw: string, ctrl: AbortController, tags: Eboo
 
         doc.querySelectorAll('.message-delete,.splitnewsnavigation,script,.adblock-service' + (images ? '' : ',img')).forEach(e => e.remove());
         replaceTags(doc, tags.emphasis, 'i', 'em', 'dfn', 'var', 'q', 'dd', 'address');
-        replaceTags(doc, tags.strong, 'b', 'strong', 'mark');
+        replaceTags(doc, tags.strong, 'b', 'strong', 'mark', 'h2', 'h3', 'h4', 'h5', 'h6');
         replaceTags(doc, tags.strikethrough, 's', 'strike', 'del');
         replaceTags(doc, tags.underline, 'u', 'ins', 'abbr', 'a');
         doc.querySelectorAll('.game-message,.quote').forEach(e => replaceTag(doc, e, blockquote));
+
+        doc.querySelectorAll('section section').forEach(unwrap);
 
         doc.querySelectorAll(`body :not(header):not(section):not(${tags.emphasis}):not(${tags.strong}):not(${tags.strikethrough}):not(${tags.underline}):not(${blockquote}):not(sub):not(sup):not(img):not(h1)`).forEach(e => {
             if (e.parentElement.tagName === 'SECTION' || !getComputedStyle(e).display.includes('inline')) {
@@ -362,10 +323,11 @@ export async function processHtml(raw: string, ctrl: AbortController, tags: Eboo
         );
 
         if (images) {
+            const chapterTitle = tags === formats.EPUB && doc.querySelector('header').textContent;
             await pMap(
                 Array.from(doc.querySelectorAll('img')),
                 async e => {
-                    let i = await downloadImage(e.closest('section').querySelector('header').textContent, e.src, images, ctrl)
+                    let i = await downloadImage(chapterTitle || e.closest('section').querySelector('header').textContent, e.src, images, ctrl)
                     if (i) {
                         const alt = fixAttr(e.alt);
                         const title = fixAttr(e.title);
