@@ -29,13 +29,13 @@ export class Rulate extends Base {
         }
         this.covers = Array.from(new Set(this.covers));
         this.d = parseRuDate(this.chapterElements[this.chapterElements.length - 1].parentElement.previousElementSibling.previousElementSibling.firstElementChild.getAttribute('title'));
-        this.genres = Array.from(document.querySelectorAll('.info a[href^="/search?genres"]'), a => a.textContent);
-        this.keywords = Array.from(document.querySelectorAll('.info a[href^="/search?tags"]'), a => a.textContent).join(', ');
+        this.genres = Array.from(info.querySelectorAll('a[href^="/search?genres"]'), a => a.textContent);
+        this.keywords = Array.from(info.querySelectorAll('a[href^="/search?tags"]'), a => a.textContent).join(', ');
         this.subtitle = this.extractTitle(document);
         this.title = this.subtitle.substring(this.subtitle.lastIndexOf(' / ') + 3);
-        this.description = info.querySelector('.btn-toolbar + .clear + div').innerHTML;;
+        this.description = info.querySelector('.btn-toolbar + div').innerHTML;
         //todo this.lang = undefined;
-        this.authors = Array.from(document.getElementById('Info').querySelectorAll('a[href^="/search?from=book&t="]')).filter(e => e.parentElement.previousElementSibling.textContent === 'Автор:').map((a: HTMLAnchorElement) => ({ name: a.textContent, homePage: a.href }));
+        this.authors = Array.from(info.querySelectorAll('a[href^="/search?from=book&t="]')).filter(e => e.parentElement.previousElementSibling.textContent === 'Автор:').map((a: HTMLAnchorElement) => ({ name: a.textContent, homePage: a.href }));
 
         this.bookAlias = sanitizeFilename(this.title);
 
