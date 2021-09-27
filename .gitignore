@@ -65,3 +65,5 @@ build/*.js
 !build/*.user.js
 !build/*.meta.js
 todo
+stats.html
+src/templates/**/*.ts
