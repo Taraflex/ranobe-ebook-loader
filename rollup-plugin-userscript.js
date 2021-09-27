@@ -74,6 +74,7 @@ const metaKeys = [
     "unwrap",
     "nocompat"
 ].reverse();
+
 function banner(params) {
     const t = [];
     let maxLen = 0;
@@ -103,7 +104,7 @@ const reloadWrapper = '(' + ((props, port, path) => ({
             });
         }
         let lastComp = null;
-        const reload = async function (o) {
+        const reimport = async function (o) {
             lastComp && (lastComp.$destroy /*|| lastComp.dispose || lastComp.destroy*/)();
             lastComp = await cb(o);
             console.log(`[${new Date().toTimeString().split(' ')[0]}] ${path} reloaded`);
@@ -111,7 +112,7 @@ const reloadWrapper = '(' + ((props, port, path) => ({
         //@ts-ignore
         const source = new unsafeWindow.EventSource(`http://localhost:${port}/${encodeURIComponent(path)}`);
         //@ts-ignore
-        source.addEventListener('patch', e => this.patchedImport('data:application/javascript;charset=utf-8;base64,' + e.data).then(reload));
+        source.addEventListener('patch', e => this.patchedImport('data:application/javascript;charset=utf-8;base64,' + e.data).then(reimport));
         source.addEventListener('reload', () => { source.close(); location.reload() });
     }
 })).toString() + ')';
@@ -149,8 +150,12 @@ export default function (params) {
         name: 'userscript-import-patcher',
         banner: () => _banner,
         outputOptions: o => Object.assign(o, {
+            externalLiveBindings: false,
             minifyInternalExports: false,
-            preferConst: true,
+            generatedCode: Object.assign(o.generatedCode || {}, {
+                preset: 'es2015',
+                constBindings: true
+            }),
             freeze: false,
             inlineDynamicImports: !hot,
             format: 'es',
@@ -168,7 +173,6 @@ export default function (params) {
             },
             renderDynamicImport: function ({ moduleId, format }) {
                 return format === 'es' && this.getModuleInfo(moduleId).isEntry ? {
-                    //todo optimize
                     left: reloadWrapper + '({\n' + [...meta.grant.filter(g => g && !g.includes('.')), 'CDATA', 'uneval', 'define', 'module', 'exports', 'context', 'unsafeWindow', 'cloneInto', 'exportFunction', 'createObjectIn', 'GM', 'GM_info'].map(p => `"${p}": typeof ${p} !== 'undefined' ? ${p} : undefined`).join(',\n') + `\n}, ${port}, `,
                     right: ')'
                 } : null
@@ -182,7 +186,6 @@ export default function (params) {
                         if (hot) {
                             const server = createServer(async (request, reply) => {
                                 try {
-                                    console.log(request.headers);
                                     if (request.headers.origin && !g('allowed_origins').has(request.headers.origin)) {
                                         throw 'Invalid origin: ' + request.headers.origin;
                                     }
@@ -209,7 +212,6 @@ export default function (params) {
                                         send(reply, data);
                                     } else {
                                         reply.write(`event: reload\nid: ${Date.now()}\n\n`);
-                                        console.log('after send reload');
                                     }
 
                                     clientsStore(f, []).push(reply);
