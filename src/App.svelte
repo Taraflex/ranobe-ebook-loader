@@ -206,7 +206,7 @@
     console.log(APP_TITLE + ' ' + APP_VERSION);
 </script>
 
-<style type="text/scss" global>
+<style lang="scss" global>
     @import './_mixins.scss';
     #APP_TITLE_noquotes {
         @include overlay;

@@ -15,7 +15,7 @@
     }
 </script>
 
-<style type="text/scss" global>
+<style lang="scss" global>
     @import './_mixins.scss';
     $bg-color: rgba(#d50000, 0.85);
     .u_d {
