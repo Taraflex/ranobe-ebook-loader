@@ -59,7 +59,8 @@ export default {
 				APP_ICON: `"${APP_ICON}"`,
 				APP_VERSION: `"${APP_VERSION}"`,
 				APP_TITLE: `"${APP_TITLE}"`,
-			}
+			},
+			preventAssignment: false
 		}),
 		dev ? 0 : terser({
 			ecma: 2018,
@@ -97,3 +98,4 @@ export default {
 		clearScreen: false
 	}
 };
+
