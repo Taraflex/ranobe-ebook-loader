@@ -150,7 +150,7 @@ export default function (params) {
         banner: () => _banner,
         outputOptions: o => Object.assign(o, {
             minifyInternalExports: false,
-            preferConst: true,
+            generatedCode: {constBindings: true},
             freeze: false,
             inlineDynamicImports: !hot,
             format: 'es',
@@ -246,3 +246,4 @@ export default function (params) {
         } : {})
     }
 }
+
