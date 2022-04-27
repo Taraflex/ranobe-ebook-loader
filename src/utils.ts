@@ -302,12 +302,12 @@ export async function processHtml(raw: string, ctrl: AbortController, tags: Eboo
         replaceTags(doc, tags.emphasis, 'i', 'em', 'dfn', 'var', 'q', 'dd', 'address');
         replaceTags(doc, tags.strong, 'b', 'strong', 'mark', 'h2', 'h3', 'h4', 'h5', 'h6');
         replaceTags(doc, tags.strikethrough, 's', 'strike', 'del');
-        replaceTags(doc, tags.underline, 'u', 'ins', 'abbr', 'a');
+        replaceTags(doc, tags.underline, 'u', 'ins', 'abbr');
         doc.querySelectorAll('.game-message,.quote').forEach(e => replaceTag(doc, e, blockquote));
 
         doc.querySelectorAll('section section').forEach(unwrap);
 
-        doc.querySelectorAll(`body :not(header):not(section):not(${tags.emphasis}):not(${tags.strong}):not(${tags.strikethrough}):not(${tags.underline}):not(${blockquote}):not(sub):not(sup):not(img):not(h1)`).forEach(e => {
+        doc.querySelectorAll(`body :not(header):not(section):not(${tags.emphasis}):not(${tags.strong}):not(${tags.strikethrough}):not(${tags.underline}):not(${blockquote}):not(sub):not(sup):not(img):not(h1):not(a):not([id])`).forEach(e => {
             if (e.parentElement.tagName === 'SECTION' || !getComputedStyle(e).display.includes('inline')) {
                 replaceTag(doc, e, 'div');
             } else {
@@ -381,8 +381,14 @@ export async function processHtml(raw: string, ctrl: AbortController, tags: Eboo
 }
 
 function dropAttrs(e: HTMLElement) {
-    while (e.attributes.length > 0) {
-        e.removeAttribute(e.attributes.item(0).name);
+    let validAttrs = ['id', 'href'];
+    let length = 0;
+    while (e.attributes.length != length) {
+        if (validAttrs.includes(e.attributes.item(length).name)) {
+            ++length;
+        } else {
+            e.removeAttribute(e.attributes.item(length).name);
+        }
     }
 }
 
